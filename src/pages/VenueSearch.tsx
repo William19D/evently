@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Filter, Search, MapPin, Calendar, Users, SlidersHorizontal } from "lucide-react";
 
 const VenueSearch = () => {
-  const [priceRange, setPriceRange] = useState([0, 1500000]);
+  const [priceRange, setPriceRange] = useState([0, 8000000]);
   const [showFilters, setShowFilters] = useState(false);
 
   // Mock data for search results
@@ -21,7 +21,7 @@ const VenueSearch = () => {
       name: "Centro de Eventos Armenia Plaza",
       location: "Centro, Armenia - Quindío",
       image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80",
-      price: 450000,
+      price: 2800000,
       rating: 4.8,
       capacity: "150-200 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -32,7 +32,7 @@ const VenueSearch = () => {
       name: "Hacienda Cafetera El Ocaso",
       location: "Circasia, Armenia - Quindío",
       image: "https://images.unsplash.com/photo-1464207687429-7505649dae38?w=800&q=80",
-      price: 1200000,
+      price: 4500000,
       rating: 4.9,
       capacity: "80-120 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -43,7 +43,7 @@ const VenueSearch = () => {
       name: "Auditorio Cenexpo Armenia",
       location: "Zona Rosa, Armenia - Quindío",
       image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-      price: 850000,
+      price: 4200000,
       rating: 4.7,
       capacity: "200-300 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -54,7 +54,7 @@ const VenueSearch = () => {
       name: "Jardín Bambú Recinto del Pensamiento",
       location: "Manizales, Caldas",
       image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80",
-      price: 380000,
+      price: 2200000,
       rating: 4.6,
       capacity: "100-150 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -65,7 +65,7 @@ const VenueSearch = () => {
       name: "Loft Urbano Pereira",
       location: "Centro, Pereira - Risaralda",
       image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-      price: 320000,
+      price: 1800000,
       rating: 4.5,
       capacity: "60-80 personas",
       amenities: ["WiFi", "Parking"],
@@ -76,7 +76,7 @@ const VenueSearch = () => {
       name: "Salón de Cristal Medellín",
       location: "El Poblado, Medellín - Antioquia",
       image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80",
-      price: 950000,
+      price: 5200000,
       rating: 4.9,
       capacity: "100-150 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -169,13 +169,13 @@ const VenueSearch = () => {
                     <Slider
                       value={priceRange}
                       onValueChange={setPriceRange}
-                      max={1500000}
-                      step={50000}
+                      max={8000000}
+                      step={100000}
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>${priceRange[0].toLocaleString()}</span>
-                      <span>${priceRange[1].toLocaleString()}</span>
+                      <span>${Math.floor(priceRange[0] / 1000)}K</span>
+                      <span>${Math.floor(priceRange[1] / 1000)}K</span>
                     </div>
                   </div>
                 </div>
