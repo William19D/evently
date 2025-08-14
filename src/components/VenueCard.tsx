@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Star, MapPin, Users, Wifi, Car, Coffee } from "lucide-react";
+import { Link } from "react-router-dom";
 
 interface VenueCardProps {
   id: string;
@@ -16,6 +17,7 @@ interface VenueCardProps {
 }
 
 const VenueCard = ({ 
+  id,
   name, 
   location, 
   image, 
@@ -91,11 +93,13 @@ const VenueCard = ({
             <div className="text-2xl font-bold text-primary">
               ${price.toLocaleString()}
             </div>
-            <div className="text-xs text-muted-foreground">por día</div>
+            <div className="text-xs text-muted-foreground">por evento</div>
           </div>
-          <Button size="sm" className="shadow-soft hover:shadow-card">
-            Ver Detalles
-          </Button>
+          <Link to={`/event/${id}`}>
+            <Button size="sm" className="shadow-soft hover:shadow-card">
+              Ver Detalles
+            </Button>
+          </Link>
         </div>
       </CardContent>
     </Card>

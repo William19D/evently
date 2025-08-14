@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, Facebook, Chrome } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, Facebook, Chrome, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Register = () => {
@@ -24,30 +25,70 @@ const Register = () => {
     acceptTerms: false
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const validateForm = () => {
+    const newErrors: {[key: string]: string} = {};
+    
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "El nombre es requerido";
+    }
+    
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "El apellido es requerido";
+    }
+    
+    if (!formData.email) {
+      newErrors.email = "El correo electrónico es requerido";
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = "Ingresa un correo electrónico válido";
+    }
+    
+    if (!formData.phone.trim()) {
+      newErrors.phone = "El teléfono es requerido";
+    } else if (!/^\d{10}$/.test(formData.phone.replace(/\s/g, ''))) {
+      newErrors.phone = "Ingresa un número de teléfono válido (10 dígitos)";
+    }
+    
+    if (!formData.userType) {
+      newErrors.userType = "Selecciona un tipo de usuario";
+    }
+    
+    if (!formData.password) {
+      newErrors.password = "La contraseña es requerida";
+    } else if (formData.password.length < 8) {
+      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
+    }
+    
+    if (!formData.confirmPassword) {
+      newErrors.confirmPassword = "Confirma tu contraseña";
+    } else if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = "Las contraseñas no coinciden";
+    }
+    
+    if (!formData.acceptTerms) {
+      newErrors.acceptTerms = "Debes aceptar los términos y condiciones";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
     
-    if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Error",
-        description: "Las contraseñas no coinciden",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!formData.acceptTerms) {
-      toast({
-        title: "Error", 
-        description: "Debes aceptar los términos y condiciones",
-        variant: "destructive"
-      });
+    if (!validateForm()) {
       return;
     }
 
@@ -58,8 +99,12 @@ const Register = () => {
       setIsLoading(false);
       toast({
         title: "¡Cuenta creada exitosamente!",
-        description: "Bienvenido a Evently. Ya puedes iniciar sesión.",
+        description: "Bienvenido a Evently. Redirigiendo al inicio de sesión...",
       });
+      // Redirect to login after successful registration
+      setTimeout(() => {
+        navigate("/login");
+      }, 1000);
     }, 1500);
   };
 
@@ -86,13 +131,20 @@ const Register = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {Object.keys(errors).length > 0 && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>Por favor corrige los errores en el formulario</AlertDescription>
+              </Alert>
+            )}
+
             {/* Social Registration */}
             <div className="space-y-3">
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Chrome className="w-4 h-4 mr-2" />
                 Registrarse con Google
               </Button>
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Facebook className="w-4 h-4 mr-2" />
                 Registrarse con Facebook
               </Button>
@@ -121,10 +173,13 @@ const Register = () => {
                       placeholder="Juan"
                       value={formData.firstName}
                       onChange={(e) => handleInputChange("firstName", e.target.value)}
-                      className="pl-10"
+                      className={`pl-10 transition-colors ${errors.firstName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                       required
                     />
                   </div>
+                  {errors.firstName && (
+                    <p className="text-sm text-destructive">{errors.firstName}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Apellido</Label>
@@ -134,8 +189,12 @@ const Register = () => {
                     placeholder="Pérez"
                     value={formData.lastName}
                     onChange={(e) => handleInputChange("lastName", e.target.value)}
+                    className={`transition-colors ${errors.lastName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
+                  {errors.lastName && (
+                    <p className="text-sm text-destructive">{errors.lastName}</p>
+                  )}
                 </div>
               </div>
 
@@ -150,10 +209,13 @@ const Register = () => {
                     placeholder="juan@email.com"
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 transition-colors ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
               </div>
 
               {/* Phone */}
@@ -167,17 +229,20 @@ const Register = () => {
                     placeholder="316 789 4567"
                     value={formData.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 transition-colors ${errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
                 </div>
+                {errors.phone && (
+                  <p className="text-sm text-destructive">{errors.phone}</p>
+                )}
               </div>
 
               {/* User Type */}
               <div className="space-y-2">
                 <Label htmlFor="userType">Tipo de usuario</Label>
                 <Select onValueChange={(value) => handleInputChange("userType", value)}>
-                  <SelectTrigger>
+                  <SelectTrigger className={`transition-colors ${errors.userType ? 'border-destructive focus:ring-destructive' : ''}`}>
                     <SelectValue placeholder="Selecciona tu tipo de usuario" />
                   </SelectTrigger>
                   <SelectContent>
@@ -185,6 +250,9 @@ const Register = () => {
                     <SelectItem value="owner">Propietario - Quiero publicar mis espacios</SelectItem>
                   </SelectContent>
                 </Select>
+                {errors.userType && (
+                  <p className="text-sm text-destructive">{errors.userType}</p>
+                )}
               </div>
 
               {/* Password */}
@@ -198,7 +266,7 @@ const Register = () => {
                     placeholder="Mínimo 8 caracteres"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
-                    className="pl-10 pr-10"
+                    className={`pl-10 pr-10 transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                     minLength={8}
                   />
@@ -206,7 +274,7 @@ const Register = () => {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-primary/10"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -216,6 +284,9 @@ const Register = () => {
                     )}
                   </Button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
               </div>
 
               {/* Confirm Password */}
@@ -229,14 +300,14 @@ const Register = () => {
                     placeholder="Repite tu contraseña"
                     value={formData.confirmPassword}
                     onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                    className="pl-10 pr-10"
+                    className={`pl-10 pr-10 transition-colors ${errors.confirmPassword ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-primary/10"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   >
                     {showConfirmPassword ? (
@@ -246,30 +317,39 @@ const Register = () => {
                     )}
                   </Button>
                 </div>
+                {errors.confirmPassword && (
+                  <p className="text-sm text-destructive">{errors.confirmPassword}</p>
+                )}
               </div>
 
               {/* Terms and Conditions */}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="terms"
-                  checked={formData.acceptTerms}
-                  onCheckedChange={(checked) => handleInputChange("acceptTerms", checked as boolean)}
-                />
-                <label htmlFor="terms" className="text-sm text-muted-foreground leading-none">
-                  Acepto los{" "}
-                  <Link to="/terms" className="text-primary hover:underline">
-                    términos y condiciones
-                  </Link>{" "}
-                  y la{" "}
-                  <Link to="/privacy" className="text-primary hover:underline">
-                    política de privacidad
-                  </Link>
-                </label>
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="terms"
+                    checked={formData.acceptTerms}
+                    onCheckedChange={(checked) => handleInputChange("acceptTerms", checked as boolean)}
+                    className={`transition-colors ${errors.acceptTerms ? 'border-destructive data-[state=checked]:bg-destructive' : ''}`}
+                  />
+                  <label htmlFor="terms" className="text-sm text-muted-foreground leading-none">
+                    Acepto los{" "}
+                    <Link to="/terms" className="text-primary hover:underline transition-colors">
+                      términos y condiciones
+                    </Link>{" "}
+                    y la{" "}
+                    <Link to="/privacy" className="text-primary hover:underline transition-colors">
+                      política de privacidad
+                    </Link>
+                  </label>
+                </div>
+                {errors.acceptTerms && (
+                  <p className="text-sm text-destructive">{errors.acceptTerms}</p>
+                )}
               </div>
 
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full shadow-md hover:shadow-lg transition-all duration-200" 
                 size="lg"
                 disabled={isLoading}
               >
@@ -279,7 +359,7 @@ const Register = () => {
 
             <div className="text-center text-sm text-muted-foreground">
               ¿Ya tienes cuenta?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium">
+              <Link to="/login" className="text-primary hover:underline font-medium transition-colors">
                 Inicia sesión aquí
               </Link>
             </div>

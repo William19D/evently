@@ -2,55 +2,21 @@ import VenueCard from "./VenueCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { sampleEvents } from "@/data/events";
 
 const FeaturedSpaces = () => {
-  // Mock data for featured venues
-  const featuredVenues = [
-    {
-      id: "1",
-      name: "Centro de Eventos Armenia Plaza",
-      location: "Centro, Armenia - Quindío",
-      image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80",
-      price: 450000,
-      rating: 4.8,
-      capacity: "150-200 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: true
-    },
-    {
-      id: "2", 
-      name: "Terraza Mirador del Quindío",
-      location: "La Tebaida, Quindío", 
-      image: "https://images.unsplash.com/photo-1464207687429-7505649dae38?w=800&q=80",
-      price: 680000,
-      rating: 4.9,
-      capacity: "80-120 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: true
-    },
-    {
-      id: "3",
-      name: "Auditorio Cenexpo Armenia",
-      location: "Zona Rosa, Armenia - Quindío",
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-      price: 850000,
-      rating: 4.7,
-      capacity: "200-300 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: false
-    },
-    {
-      id: "4",
-      name: "Jardín Bambú Recinto del Pensamiento",
-      location: "Manizales, Caldas",
-      image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80",
-      price: 380000,
-      rating: 4.6,
-      capacity: "100-150 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: false
-    }
-  ];
+  // Use sample events data
+  const featuredVenues = sampleEvents.map(event => ({
+    id: event.id,
+    name: event.title,
+    location: `${event.location.city}, ${event.location.department}`,
+    image: event.image,
+    price: event.price,
+    rating: event.rating,
+    capacity: `Hasta ${event.capacity} personas`,
+    amenities: event.amenities.slice(0, 3),
+    featured: true
+  }));
 
   return (
     <section className="py-16 bg-surface">

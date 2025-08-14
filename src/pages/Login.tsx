@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, Facebook, Chrome } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, Facebook, Chrome, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
@@ -13,19 +14,54 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const validateForm = () => {
+    const newErrors: {email?: string, password?: string} = {};
+    
+    if (!email) {
+      newErrors.email = "El correo electrónico es requerido";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Ingresa un correo electrónico válido";
+    }
+    
+    if (!password) {
+      newErrors.password = "La contraseña es requerida";
+    } else if (password.length < 6) {
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     setIsLoading(true);
     
     // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      toast({
-        title: "¡Bienvenido a Evently!",
-        description: "Has iniciado sesión correctamente.",
-      });
+      // Simulate login success/failure
+      if (email === "demo@evently.com" && password === "123456") {
+        toast({
+          title: "¡Bienvenido a Evently!",
+          description: "Has iniciado sesión correctamente.",
+        });
+        navigate("/"); // Redirect to home
+      } else {
+        setErrors({
+          general: "Credenciales incorrectas. Usa demo@evently.com / 123456 para probar."
+        });
+      }
     }, 1500);
   };
 
@@ -52,13 +88,28 @@ const Login = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {errors.general && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{errors.general}</AlertDescription>
+              </Alert>
+            )}
+
+            {/* Demo credentials info */}
+            <Alert className="bg-primary/5 border-primary/20">
+              <AlertCircle className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-primary">
+                <strong>Demo:</strong> demo@evently.com / 123456
+              </AlertDescription>
+            </Alert>
+
             {/* Social Login */}
             <div className="space-y-3">
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Chrome className="w-4 h-4 mr-2" />
                 Continuar con Google
               </Button>
-              <Button variant="outline" className="w-full" type="button">
+              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Facebook className="w-4 h-4 mr-2" />
                 Continuar con Facebook
               </Button>
@@ -85,10 +136,13 @@ const Login = () => {
                     placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
+                    className={`pl-10 transition-colors ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
                 </div>
+                {errors.email && (
+                  <p className="text-sm text-destructive">{errors.email}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -101,14 +155,14 @@ const Login = () => {
                     placeholder="Tu contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
+                    className={`pl-10 pr-10 transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 hover:bg-primary/10"
                     onClick={() => setShowPassword(!showPassword)}
                   >
                     {showPassword ? (
@@ -118,6 +172,9 @@ const Login = () => {
                     )}
                   </Button>
                 </div>
+                {errors.password && (
+                  <p className="text-sm text-destructive">{errors.password}</p>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
@@ -126,7 +183,7 @@ const Login = () => {
                 </div>
                 <Link 
                   to="/forgot-password" 
-                  className="text-sm text-primary hover:underline"
+                  className="text-sm text-primary hover:underline transition-colors"
                 >
                   ¿Olvidaste tu contraseña?
                 </Link>
@@ -134,7 +191,7 @@ const Login = () => {
 
               <Button 
                 type="submit" 
-                className="w-full" 
+                className="w-full shadow-md hover:shadow-lg transition-all duration-200" 
                 size="lg"
                 disabled={isLoading}
               >
@@ -144,7 +201,7 @@ const Login = () => {
 
             <div className="text-center text-sm text-muted-foreground">
               ¿No tienes cuenta?{" "}
-              <Link to="/register" className="text-primary hover:underline font-medium">
+              <Link to="/register" className="text-primary hover:underline font-medium transition-colors">
                 Regístrate aquí
               </Link>
             </div>
