@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Search, User, Menu, Calendar, MapPin } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -34,9 +35,11 @@ const Navigation = () => {
             <Button variant="ghost" className="font-medium">
               Publicar Espacio
             </Button>
-            <Button variant="outline" size="sm" className="flex items-center gap-2">
-              <User className="w-4 h-4" />
-              Iniciar Sesión
+            <Button variant="outline" size="sm" className="flex items-center gap-2" asChild>
+              <Link to="/login">
+                <User className="w-4 h-4" />
+                Iniciar Sesión
+              </Link>
             </Button>
           </div>
 
@@ -69,9 +72,11 @@ const Navigation = () => {
                 <Button variant="ghost" className="w-full justify-start mb-2">
                   Publicar Espacio
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
-                  <User className="w-4 h-4 mr-2" />
-                  Iniciar Sesión
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <Link to="/login">
+                    <User className="w-4 h-4 mr-2" />
+                    Iniciar Sesión
+                  </Link>
                 </Button>
               </div>
             </div>

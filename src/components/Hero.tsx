@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, MapPin, Calendar, Users } from "lucide-react";
+import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-venue.jpg";
 
 const Hero = () => {
@@ -79,9 +80,11 @@ const Hero = () => {
               {/* Search Button */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-transparent">Buscar</label>
-                <Button variant="hero" size="lg" className="w-full h-12">
-                  <Search className="w-4 h-4 mr-2" />
-                  Buscar Espacios
+                <Button variant="hero" size="lg" className="w-full h-12" asChild>
+                  <Link to="/search">
+                    <Search className="w-4 h-4 mr-2" />
+                    Buscar Espacios
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -89,17 +92,17 @@ const Hero = () => {
 
           {/* Quick Categories */}
           <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              Bodas
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
+              <Link to="/search">Bodas</Link>
             </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              Conferencias
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
+              <Link to="/search">Conferencias</Link>
             </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              Cumpleaños
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
+              <Link to="/search">Cumpleaños</Link>
             </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20">
-              Eventos Corporativos
+            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
+              <Link to="/search">Eventos Corporativos</Link>
             </Button>
           </div>
         </div>
