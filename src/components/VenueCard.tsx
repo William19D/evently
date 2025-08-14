@@ -89,7 +89,7 @@ const VenueCard = ({
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="text-right">
             <div className="text-2xl font-bold text-primary">
-              ${price.toLocaleString()}
+              ${Math.floor(price / 1000)}K
             </div>
             <div className="text-xs text-muted-foreground">por día</div>
           </div>

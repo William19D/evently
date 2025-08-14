@@ -38,7 +38,7 @@ const Hero = () => {
                 <div className="relative">
                   <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input 
-                    placeholder="Ciudad o zona" 
+                    placeholder="Armenia, Bogotá, Medellín..." 
                     className="pl-10 h-12 rounded-xl border-border/50"
                   />
                 </div>

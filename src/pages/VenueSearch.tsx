@@ -11,17 +11,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Filter, Search, MapPin, Calendar, Users, SlidersHorizontal } from "lucide-react";
 
 const VenueSearch = () => {
-  const [priceRange, setPriceRange] = useState([0, 50000]);
+  const [priceRange, setPriceRange] = useState([0, 8000000]);
   const [showFilters, setShowFilters] = useState(false);
 
   // Mock data for search results
   const searchResults = [
     {
       id: "1",
-      name: "Salón Elegance",
-      location: "Centro, Ciudad de México",
+      name: "Centro de Eventos Armenia Plaza",
+      location: "Centro, Armenia - Quindío",
       image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80",
-      price: 15000,
+      price: 2800000,
       rating: 4.8,
       capacity: "150-200 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -29,10 +29,10 @@ const VenueSearch = () => {
     },
     {
       id: "2", 
-      name: "Terraza Vista Panorámica",
-      location: "Polanco, Ciudad de México",
+      name: "Hacienda Cafetera El Ocaso",
+      location: "Circasia, Armenia - Quindío",
       image: "https://images.unsplash.com/photo-1464207687429-7505649dae38?w=800&q=80",
-      price: 25000,
+      price: 4500000,
       rating: 4.9,
       capacity: "80-120 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -40,10 +40,10 @@ const VenueSearch = () => {
     },
     {
       id: "3",
-      name: "Auditorio Moderno",
-      location: "Santa Fe, Ciudad de México",
+      name: "Auditorio Cenexpo Armenia",
+      location: "Zona Rosa, Armenia - Quindío",
       image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-      price: 20000,
+      price: 4200000,
       rating: 4.7,
       capacity: "200-300 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -51,10 +51,10 @@ const VenueSearch = () => {
     },
     {
       id: "4",
-      name: "Jardín Botanical",
-      location: "Coyoacán, Ciudad de México",
+      name: "Jardín Bambú Recinto del Pensamiento",
+      location: "Manizales, Caldas",
       image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80",
-      price: 18000,
+      price: 2200000,
       rating: 4.6,
       capacity: "100-150 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -62,10 +62,10 @@ const VenueSearch = () => {
     },
     {
       id: "5",
-      name: "Loft Industrial",
-      location: "Roma Norte, Ciudad de México",
+      name: "Loft Urbano Pereira",
+      location: "Centro, Pereira - Risaralda",
       image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-      price: 12000,
+      price: 1800000,
       rating: 4.5,
       capacity: "60-80 personas",
       amenities: ["WiFi", "Parking"],
@@ -73,10 +73,10 @@ const VenueSearch = () => {
     },
     {
       id: "6",
-      name: "Salón de Cristal",
-      location: "Las Lomas, Ciudad de México",
+      name: "Salón de Cristal Medellín",
+      location: "El Poblado, Medellín - Antioquia",
       image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80",
-      price: 30000,
+      price: 5200000,
       rating: 4.9,
       capacity: "100-150 personas",
       amenities: ["WiFi", "Parking", "Catering"],
@@ -95,7 +95,7 @@ const VenueSearch = () => {
             <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input placeholder="Ubicación" className="pl-10" />
+                <Input placeholder="Armenia, Bogotá, Medellín..." className="pl-10" />
               </div>
               <div className="relative">
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
@@ -169,13 +169,13 @@ const VenueSearch = () => {
                     <Slider
                       value={priceRange}
                       onValueChange={setPriceRange}
-                      max={50000}
-                      step={1000}
+                      max={8000000}
+                      step={100000}
                       className="w-full"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>${priceRange[0].toLocaleString()}</span>
-                      <span>${priceRange[1].toLocaleString()}</span>
+                      <span>${Math.floor(priceRange[0] / 1000)}K</span>
+                      <span>${Math.floor(priceRange[1] / 1000)}K</span>
                     </div>
                   </div>
                 </div>
