@@ -6,12 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, Facebook, Chrome, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Facebook, Chrome, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const Register = () => {
+const ClientRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -21,7 +20,6 @@ const Register = () => {
     phone: "",
     password: "",
     confirmPassword: "",
-    userType: "",
     acceptTerms: false
   });
   const [isLoading, setIsLoading] = useState(false);
@@ -52,14 +50,10 @@ const Register = () => {
       newErrors.phone = "Ingresa un número de teléfono válido (10 dígitos)";
     }
     
-    if (!formData.userType) {
-      newErrors.userType = "Selecciona un tipo de usuario";
-    }
-    
     if (!formData.password) {
       newErrors.password = "La contraseña es requerida";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "La contraseña debe tener al menos 8 caracteres";
+    } else if (formData.password.length < 6) {
+      newErrors.password = "La contraseña debe tener al menos 6 caracteres";
     }
     
     if (!formData.confirmPassword) {
@@ -78,7 +72,6 @@ const Register = () => {
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: "" }));
     }
@@ -94,16 +87,14 @@ const Register = () => {
 
     setIsLoading(true);
     
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
       toast({
-        title: "¡Cuenta creada exitosamente!",
+        title: "¡Cuenta de cliente creada!",
         description: "Bienvenido a Evently. Redirigiendo al inicio de sesión...",
       });
-      // Redirect to login after successful registration
       setTimeout(() => {
-        navigate("/login");
+        navigate("/login/client");
       }, 1000);
     }, 1500);
   };
@@ -111,22 +102,19 @@ const Register = () => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Back to home */}
-        <Link to="/" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
+        <Link to="/register-selection" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Volver al inicio
+          Cambiar tipo de usuario
         </Link>
 
         <Card className="shadow-elegant bg-card/95 backdrop-blur-sm border-border/50">
           <CardHeader className="text-center space-y-2">
-            <div className="mx-auto">
-              <h1 className="text-2xl font-display font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Evently
-              </h1>
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+              <UserIcon className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-semibold">Crear Cuenta</CardTitle>
+            <CardTitle className="text-2xl font-semibold">Registro - Cliente</CardTitle>
             <CardDescription>
-              Únete a Evently y encuentra el espacio perfecto para tus eventos
+              Crea tu cuenta para buscar espacios
             </CardDescription>
           </CardHeader>
 
@@ -138,7 +126,6 @@ const Register = () => {
               </Alert>
             )}
 
-            {/* Social Registration */}
             <div className="space-y-3">
               <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Chrome className="w-4 h-4 mr-2" />
@@ -146,7 +133,7 @@ const Register = () => {
               </Button>
               <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Facebook className="w-4 h-4 mr-2" />
-                Registrarse con Facebook
+                Registrarse with Facebook
               </Button>
             </div>
 
@@ -159,14 +146,12 @@ const Register = () => {
               </div>
             </div>
 
-            {/* Registration Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name Fields */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">Nombre</Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <UserIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                     <Input
                       id="firstName"
                       type="text"
@@ -198,7 +183,6 @@ const Register = () => {
                 </div>
               </div>
 
-              {/* Email */}
               <div className="space-y-2">
                 <Label htmlFor="email">Correo electrónico</Label>
                 <div className="relative">
@@ -218,7 +202,6 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Phone */}
               <div className="space-y-2">
                 <Label htmlFor="phone">Teléfono</Label>
                 <div className="relative">
@@ -238,24 +221,6 @@ const Register = () => {
                 )}
               </div>
 
-              {/* User Type */}
-              <div className="space-y-2">
-                <Label htmlFor="userType">Tipo de usuario</Label>
-                <Select onValueChange={(value) => handleInputChange("userType", value)}>
-                  <SelectTrigger className={`transition-colors ${errors.userType ? 'border-destructive focus:ring-destructive' : ''}`}>
-                    <SelectValue placeholder="Selecciona tu tipo de usuario" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="client">Cliente - Busco espacios para eventos</SelectItem>
-                    <SelectItem value="owner">Propietario - Quiero publicar mis espacios</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.userType && (
-                  <p className="text-sm text-destructive">{errors.userType}</p>
-                )}
-              </div>
-
-              {/* Password */}
               <div className="space-y-2">
                 <Label htmlFor="password">Contraseña</Label>
                 <div className="relative">
@@ -263,12 +228,12 @@ const Register = () => {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Mínimo 8 caracteres"
+                    placeholder="Mínimo 6 caracteres"
                     value={formData.password}
                     onChange={(e) => handleInputChange("password", e.target.value)}
                     className={`pl-10 pr-10 transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
-                    minLength={8}
+                    minLength={6}
                   />
                   <Button
                     type="button"
@@ -289,7 +254,6 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Confirm Password */}
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirmar contraseña</Label>
                 <div className="relative">
@@ -322,7 +286,6 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Terms and Conditions */}
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
                   <Checkbox
@@ -359,7 +322,7 @@ const Register = () => {
 
             <div className="text-center text-sm text-muted-foreground">
               ¿Ya tienes cuenta?{" "}
-              <Link to="/login" className="text-primary hover:underline font-medium transition-colors">
+              <Link to="/login/client" className="text-primary hover:underline font-medium transition-colors">
                 Inicia sesión aquí
               </Link>
             </div>
@@ -370,4 +333,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default ClientRegister;

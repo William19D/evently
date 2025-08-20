@@ -6,10 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, Facebook, Chrome, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, Facebook, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-const Login = () => {
+const ClientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -47,19 +47,17 @@ const Login = () => {
     
     setIsLoading(true);
     
-    // Simulate API call
     setTimeout(() => {
       setIsLoading(false);
-      // Simulate login success/failure
-      if (email === "demo@evently.com" && password === "123456") {
+      if (email === "cliente@evently.com" && password === "123456") {
         toast({
-          title: "¡Bienvenido a Evently!",
+          title: "¡Bienvenido Cliente!",
           description: "Has iniciado sesión correctamente.",
         });
-        navigate("/"); // Redirect to home
+        navigate("/");
       } else {
         setErrors({
-          general: "Credenciales incorrectas. Usa demo@evently.com / 123456 para probar."
+          general: "Credenciales incorrectas. Usa cliente@evently.com / 123456 para probar."
         });
       }
     }, 1500);
@@ -68,22 +66,19 @@ const Login = () => {
   return (
     <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
       <div className="w-full max-w-md">
-        {/* Back to home */}
-        <Link to="/" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
+        <Link to="/login-selection" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
           <ArrowLeft className="w-4 h-4 mr-2" />
-          Volver al inicio
+          Cambiar tipo de usuario
         </Link>
 
         <Card className="shadow-elegant bg-card/95 backdrop-blur-sm border-border/50">
           <CardHeader className="text-center space-y-2">
-            <div className="mx-auto">
-              <h1 className="text-2xl font-display font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Evently
-              </h1>
+            <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+              <User className="w-6 h-6 text-primary" />
             </div>
-            <CardTitle className="text-2xl font-semibold">Iniciar Sesión</CardTitle>
+            <CardTitle className="text-2xl font-semibold">Iniciar Sesión - Cliente</CardTitle>
             <CardDescription>
-              Ingresa a tu cuenta para gestionar tus eventos
+              Accede a tu cuenta para buscar espacios
             </CardDescription>
           </CardHeader>
 
@@ -95,15 +90,13 @@ const Login = () => {
               </Alert>
             )}
 
-            {/* Demo credentials info */}
             <Alert className="bg-primary/5 border-primary/20">
               <AlertCircle className="h-4 w-4 text-primary" />
               <AlertDescription className="text-primary">
-                <strong>Demo:</strong> demo@evently.com / 123456
+                <strong>Demo:</strong> cliente@evently.com / 123456
               </AlertDescription>
             </Alert>
 
-            {/* Social Login */}
             <div className="space-y-3">
               <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Chrome className="w-4 h-4 mr-2" />
@@ -124,7 +117,6 @@ const Login = () => {
               </div>
             </div>
 
-            {/* Email/Password Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Correo electrónico</Label>
@@ -177,10 +169,7 @@ const Login = () => {
                 )}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {/* Checkbox would go here if needed */}
-                </div>
+              <div className="flex items-center justify-end">
                 <Link 
                   to="/forgot-password" 
                   className="text-sm text-primary hover:underline transition-colors"
@@ -201,8 +190,8 @@ const Login = () => {
 
             <div className="text-center text-sm text-muted-foreground">
               ¿No tienes cuenta?{" "}
-              <Link to="/register" className="text-primary hover:underline font-medium transition-colors">
-                Regístrate aquí
+              <Link to="/register/client" className="text-primary hover:underline font-medium transition-colors">
+                Regístrate como cliente
               </Link>
             </div>
           </CardContent>
@@ -212,4 +201,4 @@ const Login = () => {
   );
 };
 
-export default Login;
+export default ClientLogin;

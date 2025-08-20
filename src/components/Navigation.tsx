@@ -36,7 +36,7 @@ const Navigation = () => {
               Publicar Espacio
             </Button>
             <Button variant="outline" size="sm" className="flex items-center gap-2" asChild>
-              <Link to="/login">
+              <Link to="/login-selection">
                 <User className="w-4 h-4" />
                 Iniciar Sesión
               </Link>
@@ -73,7 +73,7 @@ const Navigation = () => {
                   Publicar Espacio
                 </Button>
                 <Button variant="outline" className="w-full justify-start" asChild>
-                  <Link to="/login">
+                  <Link to="/login-selection">
                     <User className="w-4 h-4 mr-2" />
                     Iniciar Sesión
                   </Link>
