@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Facebook, Chrome, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import authBackground from "@/assets/auth-background.jpg";
 
 const ClientRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -100,14 +101,32 @@ const ClientRegister = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Link to="/register-selection" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Cambiar tipo de usuario
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 flex">
+      {/* Image Section - Hidden on mobile */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <img 
+          src={authBackground} 
+          alt="Espacio de eventos elegante" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-purple-400/10"></div>
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <div className="text-center text-white max-w-md">
+            <h2 className="text-3xl font-bold mb-4">Únete a Evently</h2>
+            <p className="text-lg text-white/90">Descubre espacios únicos para tus eventos especiales</p>
+          </div>
+        </div>
+      </div>
 
-        <Card className="shadow-elegant bg-card/95 backdrop-blur-sm border-border/50">
+      {/* Form Section */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Link to="/register-selection" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Cambiar tipo de usuario
+          </Link>
+
+          <Card className="shadow-lg border-0">
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
               <UserIcon className="w-6 h-6 text-primary" />
@@ -328,6 +347,7 @@ const ClientRegister = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

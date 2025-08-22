@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Facebook, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import authBackground from "@/assets/auth-background.jpg";
 
 const ClientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -64,14 +65,32 @@ const ClientLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Link to="/login-selection" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Cambiar tipo de usuario
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 flex">
+      {/* Image Section - Hidden on mobile */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <img 
+          src={authBackground} 
+          alt="Espacio de eventos elegante" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-primary/10"></div>
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <div className="text-center text-white max-w-md">
+            <h2 className="text-3xl font-bold mb-4">Encuentra tu espacio perfecto</h2>
+            <p className="text-lg text-white/90">Conectamos clientes con los mejores espacios para eventos en Colombia</p>
+          </div>
+        </div>
+      </div>
 
-        <Card className="shadow-elegant bg-card/95 backdrop-blur-sm border-border/50">
+      {/* Form Section */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Link to="/login-selection" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Cambiar tipo de usuario
+          </Link>
+
+          <Card className="shadow-lg border-0">
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
               <User className="w-6 h-6 text-primary" />
@@ -90,9 +109,9 @@ const ClientLogin = () => {
               </Alert>
             )}
 
-            <Alert className="bg-primary/5 border-primary/20">
-              <AlertCircle className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-primary">
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
                 <strong>Demo:</strong> cliente@evently.com / 123456
               </AlertDescription>
             </Alert>
@@ -196,6 +215,7 @@ const ClientLogin = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, Building2, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerRegister = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -117,14 +118,32 @@ const OwnerRegister = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        <Link to="/register-selection" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Cambiar tipo de usuario
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-indigo-50 dark:from-slate-900 dark:to-slate-800 flex">
+      {/* Image Section - Hidden on mobile */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <img 
+          src={authBackground} 
+          alt="Espacio de eventos elegante" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-indigo-400/10"></div>
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <div className="text-center text-white max-w-md">
+            <h2 className="text-3xl font-bold mb-4">Haz crecer tu negocio</h2>
+            <p className="text-lg text-white/90">Registra tu negocio y comparte tus espacios con miles de clientes</p>
+          </div>
+        </div>
+      </div>
 
-        <Card className="shadow-elegant bg-card/95 backdrop-blur-sm border-border/50">
+      {/* Form Section */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <Link to="/register-selection" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Cambiar tipo de usuario
+          </Link>
+
+          <Card className="shadow-lg border-0">
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -388,6 +407,7 @@ const OwnerRegister = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

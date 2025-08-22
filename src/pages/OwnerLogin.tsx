@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -63,14 +64,32 @@ const OwnerLogin = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-hero flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <Link to="/login-selection" className="inline-flex items-center text-white/80 hover:text-white mb-6 transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Cambiar tipo de usuario
-        </Link>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-emerald-50 dark:from-slate-900 dark:to-slate-800 flex">
+      {/* Image Section - Hidden on mobile */}
+      <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+        <img 
+          src={authBackground} 
+          alt="Espacio de eventos elegante" 
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/20 to-emerald-400/10"></div>
+        <div className="absolute inset-0 flex items-center justify-center p-12">
+          <div className="text-center text-white max-w-md">
+            <h2 className="text-3xl font-bold mb-4">Comparte tus espacios</h2>
+            <p className="text-lg text-white/90">Conecta con clientes y haz crecer tu negocio de eventos</p>
+          </div>
+        </div>
+      </div>
 
-        <Card className="shadow-elegant bg-card/95 backdrop-blur-sm border-border/50">
+      {/* Form Section */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Link to="/login-selection" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Cambiar tipo de usuario
+          </Link>
+
+          <Card className="shadow-lg border-0">
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -89,9 +108,9 @@ const OwnerLogin = () => {
               </Alert>
             )}
 
-            <Alert className="bg-primary/5 border-primary/20">
-              <AlertCircle className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-primary">
+            <Alert className="bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20">
+              <AlertCircle className="h-4 w-4 text-emerald-600" />
+              <AlertDescription className="text-emerald-700 dark:text-emerald-300">
                 <strong>Demo:</strong> propietario@evently.com / 12345678
               </AlertDescription>
             </Alert>
@@ -182,6 +201,7 @@ const OwnerLogin = () => {
             </div>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );
