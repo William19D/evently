@@ -20,15 +20,15 @@ const Navigation = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#" className="text-foreground hover:text-primary transition-colors font-medium">
-              Espacios
-            </a>
-            <a href="#" className="text-foreground hover:text-primary transition-colors font-medium">
-              Categorías
-            </a>
-            <a href="#" className="text-foreground hover:text-primary transition-colors font-medium">
-              Para Empresas
-            </a>
+            <Link to="/about" className="text-foreground hover:text-primary transition-colors font-medium">
+              Quién Somos
+            </Link>
+            <Link to="/contact" className="text-foreground hover:text-primary transition-colors font-medium">
+              Contacto
+            </Link>
+            <Link to="/faq" className="text-foreground hover:text-primary transition-colors font-medium">
+              Preguntas Frecuentes
+            </Link>
           </div>
 
           {/* Desktop Actions */}
@@ -92,15 +92,15 @@ const Navigation = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border">
             <div className="flex flex-col space-y-3">
-              <a href="#" className="text-foreground hover:text-primary transition-colors py-2">
-                Espacios
-              </a>
-              <a href="#" className="text-foreground hover:text-primary transition-colors py-2">
-                Categorías
-              </a>
-              <a href="#" className="text-foreground hover:text-primary transition-colors py-2">
-                Para Empresas
-              </a>
+              <Link to="/about" className="text-foreground hover:text-primary transition-colors py-2">
+                Quién Somos
+              </Link>
+              <Link to="/contact" className="text-foreground hover:text-primary transition-colors py-2">
+                Contacto
+              </Link>
+              <Link to="/faq" className="text-foreground hover:text-primary transition-colors py-2">
+                Preguntas Frecuentes
+              </Link>
               <div className="pt-4 border-t border-border">
                 <Button variant="ghost" className="w-full justify-start mb-2">
                   Publicar Espacio
