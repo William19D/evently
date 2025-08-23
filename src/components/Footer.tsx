@@ -9,6 +9,7 @@ import {
   MapPin,
   Heart
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const Footer = () => {
   return (
@@ -17,9 +18,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-display font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Evently
-            </h3>
+            <Logo size="md" className="text-white" />
             <p className="text-white/80 text-sm leading-relaxed">
               La plataforma líder para encontrar y reservar espacios únicos para tus eventos especiales.
             </p>

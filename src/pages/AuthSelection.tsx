@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, User, Building2 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const AuthSelection = () => {
   return (
@@ -15,9 +16,7 @@ const AuthSelection = () => {
         <Card className="shadow-elegant bg-card/95 backdrop-blur-sm border-border/50">
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto">
-              <h1 className="text-2xl font-display font-bold bg-gradient-primary bg-clip-text text-transparent">
-                Evently
-              </h1>
+              <Logo size="md" />
             </div>
             <CardTitle className="text-2xl font-semibold">¿Qué deseas hacer?</CardTitle>
             <CardDescription>

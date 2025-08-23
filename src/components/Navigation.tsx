@@ -3,6 +3,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Search, User, Menu, Calendar, MapPin, ChevronDown, Building2 } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import Logo from "@/components/Logo";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -13,9 +14,9 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <h1 className="text-2xl font-display font-bold bg-gradient-primary bg-clip-text text-transparent">
-              Evently
-            </h1>
+            <Link to="/">
+              <Logo size="md" />
+            </Link>
           </div>
 
           {/* Desktop Navigation */}
