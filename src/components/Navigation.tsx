@@ -33,8 +33,8 @@ const Navigation = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="font-medium">
-              Publicar Espacio
+            <Button variant="ghost" className="font-medium" asChild>
+              <Link to="/publish-space">Publicar Espacio</Link>
             </Button>
             
             {/* Login Dropdown */}
@@ -102,8 +102,8 @@ const Navigation = () => {
                 Preguntas Frecuentes
               </Link>
               <div className="pt-4 border-t border-border">
-                <Button variant="ghost" className="w-full justify-start mb-2">
-                  Publicar Espacio
+                <Button variant="ghost" className="w-full justify-start mb-2" asChild>
+                  <Link to="/publish-space">Publicar Espacio</Link>
                 </Button>
                 
                 {/* Mobile Login Options */}
