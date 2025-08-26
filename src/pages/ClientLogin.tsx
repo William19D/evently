@@ -85,9 +85,9 @@ const ClientLogin = () => {
       {/* Form Section */}
       <div className="w-full lg:w-1/2 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <Link to="/login-selection" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6 transition-colors">
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Cambiar tipo de usuario
+            Volver al inicio
           </Link>
 
           <Card className="shadow-lg border-0">
