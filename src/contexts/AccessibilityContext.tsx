@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 interface AccessibilityContextType {
-  fontSize: 'small' | 'medium' | 'large';
-  setFontSize: (size: 'small' | 'medium' | 'large') => void;
+  fontScale: number;
+  setFontScale: (scale: number) => void;
   textToSpeechEnabled: boolean;
   setTextToSpeechEnabled: (enabled: boolean) => void;
   speakText: (text: string) => void;
@@ -20,7 +20,7 @@ export const useAccessibility = () => {
 };
 
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [fontSize, setFontSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [fontScale, setFontScale] = useState<number>(100);
   const [textToSpeechEnabled, setTextToSpeechEnabled] = useState(false);
 
   const speakText = (text: string) => {
@@ -48,23 +48,11 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   };
 
-  // Apply font size to root element
+  // Apply font scale to root element
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.remove('text-sm', 'text-base', 'text-lg');
-    
-    switch (fontSize) {
-      case 'small':
-        root.classList.add('text-sm');
-        break;
-      case 'medium':
-        root.classList.add('text-base');
-        break;
-      case 'large':
-        root.classList.add('text-lg');
-        break;
-    }
-  }, [fontSize]);
+    root.style.fontSize = `${fontScale}%`;
+  }, [fontScale]);
 
   // Add hover listeners for text-to-speech
   useEffect(() => {
@@ -101,8 +89,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [textToSpeechEnabled]);
 
   const value = {
-    fontSize,
-    setFontSize,
+    fontScale,
+    setFontScale,
     textToSpeechEnabled,
     setTextToSpeechEnabled,
     speakText,
