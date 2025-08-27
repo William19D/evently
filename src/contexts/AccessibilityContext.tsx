@@ -3,6 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 interface AccessibilityContextType {
   fontScale: number;
   setFontScale: (scale: number) => void;
+  highContrast: boolean;
+  setHighContrast: (enabled: boolean) => void;
   textToSpeechEnabled: boolean;
   setTextToSpeechEnabled: (enabled: boolean) => void;
   speakText: (text: string) => void;
@@ -21,6 +23,7 @@ export const useAccessibility = () => {
 
 export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [fontScale, setFontScale] = useState<number>(100);
+  const [highContrast, setHighContrast] = useState(false);
   const [textToSpeechEnabled, setTextToSpeechEnabled] = useState(false);
 
   const speakText = (text: string) => {
@@ -53,6 +56,16 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
     const root = document.documentElement;
     root.style.fontSize = `${fontScale}%`;
   }, [fontScale]);
+
+  // Apply high contrast mode
+  useEffect(() => {
+    const root = document.documentElement;
+    if (highContrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+  }, [highContrast]);
 
   // Add hover listeners for text-to-speech
   useEffect(() => {
@@ -91,6 +104,8 @@ export const AccessibilityProvider: React.FC<{ children: React.ReactNode }> = ({
   const value = {
     fontScale,
     setFontScale,
+    highContrast,
+    setHighContrast,
     textToSpeechEnabled,
     setTextToSpeechEnabled,
     speakText,

@@ -186,3 +186,24 @@ html.text-base {
 html.text-lg {
   font-size: 18px;
 }
+
+/* High contrast mode */
+html.high-contrast {
+  filter: contrast(150%) brightness(1.1);
+}
+
+html.high-contrast .bg-background {
+  background: #000000 !important;
+}
+
+html.high-contrast .text-foreground {
+  color: #ffffff !important;
+}
+
+html.high-contrast .bg-card {
+  background: #1a1a1a !important;
+}
+
+html.high-contrast .border {
+  border-color: #ffffff !important;
+}

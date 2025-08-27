@@ -14,7 +14,9 @@ import {
   Plus,
   ChevronLeft,
   ChevronRight,
-  X
+  X,
+  Contrast,
+  Palette
 } from 'lucide-react';
 
 const AccessibilityPanel = () => {
@@ -22,6 +24,8 @@ const AccessibilityPanel = () => {
   const { 
     fontScale, 
     setFontScale, 
+    highContrast,
+    setHighContrast,
     textToSpeechEnabled, 
     setTextToSpeechEnabled,
     stopSpeaking 
@@ -29,6 +33,16 @@ const AccessibilityPanel = () => {
 
   const handleFontScaleChange = (value: number[]) => {
     setFontScale(value[0]);
+  };
+
+  const increaseFontSize = () => {
+    const newScale = Math.min(fontScale + 25, 200);
+    setFontScale(newScale);
+  };
+
+  const decreaseFontSize = () => {
+    const newScale = Math.max(fontScale - 25, 75);
+    setFontScale(newScale);
   };
 
   const handleTextToSpeechToggle = (enabled: boolean) => {
@@ -66,8 +80,8 @@ const AccessibilityPanel = () => {
           isOpen ? 'translate-x-0' : 'translate-x-full'
         } absolute right-0 top-0 max-h-screen overflow-y-auto`}
       >
-        <Card className="w-80 shadow-xl border-l-0 rounded-l-lg rounded-r-none max-h-screen">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+        <Card className="w-80 shadow-xl border-l-0 rounded-l-lg rounded-r-none">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between sticky top-0 bg-card z-10 border-b">
             <CardTitle className="text-lg flex items-center gap-2">
               <Accessibility className="w-5 h-5" />
               Accesibilidad
@@ -83,7 +97,7 @@ const AccessibilityPanel = () => {
             </Button>
           </CardHeader>
           
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pb-8">
             {/* Font Size Controls */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -103,7 +117,7 @@ const AccessibilityPanel = () => {
                   onValueChange={handleFontScaleChange}
                   min={75}
                   max={200}
-                  step={5}
+                  step={25}
                   className="w-full"
                 />
                 
@@ -111,11 +125,12 @@ const AccessibilityPanel = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setFontScale(75)}
+                    onClick={decreaseFontSize}
                     className="flex-1"
+                    disabled={fontScale <= 75}
                   >
                     <Minus className="w-3 h-3 mr-1" />
-                    Mín
+                    -25%
                   </Button>
                   
                   <Button
@@ -130,13 +145,35 @@ const AccessibilityPanel = () => {
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => setFontScale(200)}
+                    onClick={increaseFontSize}
                     className="flex-1"
+                    disabled={fontScale >= 200}
                   >
                     <Plus className="w-3 h-3 mr-1" />
-                    Máx
+                    +25%
                   </Button>
                 </div>
+              </div>
+            </div>
+
+            {/* High Contrast Toggle */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Contrast className="w-4 h-4" />
+                <Label className="font-medium">Alto contraste</Label>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="text-sm text-muted-foreground">
+                    Mejora la legibilidad con colores de alto contraste
+                  </p>
+                </div>
+                <Switch
+                  checked={highContrast}
+                  onCheckedChange={setHighContrast}
+                  aria-label="Activar alto contraste"
+                />
               </div>
             </div>
 
@@ -166,13 +203,13 @@ const AccessibilityPanel = () => {
             </div>
 
             {/* Instructions */}
-            <div className="p-3 bg-muted/50 rounded-lg">
-              <p className="text-xs text-muted-foreground">
-                <strong>Instrucciones:</strong><br />
-                • Usa el deslizador para ajustar el tamaño del texto (75% - 200%)<br />
-                • Usa los botones rápidos para tamaños predeterminados<br />
-                • Activa la lectura para escuchar el texto al pasar el mouse<br />
-                • Los cambios se aplican inmediatamente en toda la página
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                <strong className="text-foreground">Instrucciones de uso:</strong><br />
+                • <strong>Tamaño:</strong> Usa el deslizador o botones (+25%/-25%) para ajustar el texto<br />
+                • <strong>Contraste:</strong> Activa para mejorar la visibilidad de colores<br />
+                • <strong>Lectura:</strong> Pasa el mouse sobre cualquier texto para escucharlo<br />
+                • <strong>Aplicación:</strong> Los cambios se ven inmediatamente en toda la página
               </p>
             </div>
           </CardContent>
