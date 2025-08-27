@@ -3,6 +3,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AccessibilityProvider } from "@/contexts/AccessibilityContext";
+import AccessibilityPanel from "@/components/AccessibilityPanel";
 import Index from "./pages/Index";
 import VenueSearch from "./pages/VenueSearch";
 import AuthSelection from "./pages/AuthSelection";
@@ -24,31 +26,34 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/search" element={<VenueSearch />} />
-          <Route path="/login-selection" element={<AuthSelection />} />
-          <Route path="/register-selection" element={<RegisterSelection />} />
-          <Route path="/login/client" element={<ClientLogin />} />
-          <Route path="/login/owner" element={<OwnerLogin />} />
-          <Route path="/register/client" element={<ClientRegister />} />
-          <Route path="/register/owner" element={<OwnerRegister />} />
-          {/* Legacy routes for backwards compatibility */}
-          <Route path="/login" element={<AuthSelection />} />
-          <Route path="/register" element={<RegisterSelection />} />
-          <Route path="/event/:id" element={<EventDetails />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/publish-space" element={<PublishSpace />} />
-          <Route path="/dashboard" element={<OwnerDashboard />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
+      <AccessibilityProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/search" element={<VenueSearch />} />
+            <Route path="/login-selection" element={<AuthSelection />} />
+            <Route path="/register-selection" element={<RegisterSelection />} />
+            <Route path="/login/client" element={<ClientLogin />} />
+            <Route path="/login/owner" element={<OwnerLogin />} />
+            <Route path="/register/client" element={<ClientRegister />} />
+            <Route path="/register/owner" element={<OwnerRegister />} />
+            {/* Legacy routes for backwards compatibility */}
+            <Route path="/login" element={<AuthSelection />} />
+            <Route path="/register" element={<RegisterSelection />} />
+            <Route path="/event/:id" element={<EventDetails />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/publish-space" element={<PublishSpace />} />
+            <Route path="/dashboard" element={<OwnerDashboard />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <AccessibilityPanel />
+        </BrowserRouter>
+      </AccessibilityProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
