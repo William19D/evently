@@ -20,7 +20,7 @@ const TwoFactorAuth = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
-  const { verifyMfaChallenge } = useAuth();
+  const { verifyMfaLogin } = useAuth();
 
   // Get MFA challenge data from location state
   const mfaData = location.state?.mfaData;
@@ -64,31 +64,18 @@ const TwoFactorAuth = () => {
     try {
       console.log('🔒 Verifying MFA with:', { factorId, challengeId, code: otp });
       
-      const { data, error } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId,
-        code: otp
-      });
+      const success = await verifyMfaLogin(otp, factorId, challengeId);
 
-      console.log('🔒 MFA verification response:', { data, error });
-
-      if (error) {
-        console.error('🔒 MFA verification error:', error);
-        setError("Código incorrecto. Inténtalo de nuevo.");
-        setOtp("");
-        return;
-      }
-
-      if (data && data.access_token && data.user) {
-        console.log('🔒 MFA verification successful with tokens, redirecting...');
+      if (success) {
+        console.log('🔒 MFA verification successful, redirecting...');
         toast({
           title: "Verificación exitosa",
           description: "Has completado la autenticación de dos factores.",
         });
         navigate("/");
       } else {
-        console.error('🔒 No valid authentication data returned after MFA verification');
-        setError("Error en la verificación. Inténtalo de nuevo.");
+        console.error('🔒 MFA verification failed');
+        setError("Código incorrecto. Inténtalo de nuevo.");
         setOtp("");
       }
     } catch (error) {

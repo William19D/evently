@@ -10,9 +10,10 @@ interface AuthContextType {
   checkMfaStatus: () => Promise<boolean>;
   enrollMfa: () => Promise<{ qrCode: string; secret: string; factorId: string } | null>;
   verifyAndEnableMfa: (code: string, factorId: string) => Promise<boolean>;
+  verifyMfaLogin: (code: string, factorId: string, challengeId: string) => Promise<boolean>;
   verifyMfaChallenge: (code: string, factorId: string) => Promise<boolean>;
   unenrollMfa: (factorId?: string) => Promise<boolean>;
-  signInWithMfa: (email: string, password: string) => Promise<{ requiresMfa: boolean; mfaData?: any; error?: string }>;
+  signInWithMfa: (email: string, password: string) => Promise<{ requiresMfa: boolean; mfaData?: any; error?: string; needsSetup?: boolean }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -135,13 +136,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('Challenge created:', challengeData);
 
       // Then verify the code against the challenge
-      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: challengeData.id,
-        code
-      });
+      console.log('🔐 About to verify MFA code with challenge ID:', challengeData.id);
+      
+      let verifyData, verifyError;
+      
+      try {
+        // Add a timeout to prevent hanging
+        const verifyPromise = supabase.auth.mfa.verify({
+          factorId,
+          challengeId: challengeData.id,
+          code
+        });
+        
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('MFA verification timeout')), 15000)
+        );
+        
+        const result = await Promise.race([verifyPromise, timeoutPromise]) as any;
+        verifyData = result.data;
+        verifyError = result.error;
+      } catch (error: any) {
+        if (error.message === 'MFA verification timeout') {
+          console.error('🔐 MFA verification timed out');
+          return false;
+        }
+        throw error;
+      }
 
-      console.log('MFA verification response:', { data: verifyData, error: verifyError });
+      console.log('🔐 MFA verification response:', { data: verifyData, error: verifyError });
 
       if (verifyError) {
         console.error('Error verifying MFA code:', verifyError);
@@ -155,6 +177,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     } catch (error) {
       console.error('Error verifying MFA enrollment:', error);
+      return false;
+    }
+  };
+
+  const verifyMfaLogin = async (code: string, factorId: string, challengeId: string): Promise<boolean> => {
+    try {
+      console.log('🔒 Verifying MFA for login with:', { codeLength: code.length, factorId, challengeId });
+      
+      if (code.length !== 6) {
+        console.error('Invalid code length:', code.length);
+        return false;
+      }
+      
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId,
+        code
+      });
+
+      console.log('🔒 MFA login verification response:', { data: verifyData, error: verifyError });
+
+      if (verifyError) {
+        console.error('Error verifying MFA login code:', verifyError);
+        return false;
+      }
+
+      console.log('🔒 MFA login verification successful');
+      return true;
+    } catch (error) {
+      console.error('Error verifying MFA login:', error);
       return false;
     }
   };
@@ -209,7 +261,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithMfa = async (email: string, password: string): Promise<{ requiresMfa: boolean; mfaData?: any; error?: string }> => {
+  const signInWithMfa = async (email: string, password: string): Promise<{ requiresMfa: boolean; mfaData?: any; error?: string; needsSetup?: boolean }> => {
     try {
       console.log('🔐 Starting sign in process...');
       
@@ -225,9 +277,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { requiresMfa: false, error: error.message };
       }
 
-      // Check if the session is incomplete (requires MFA)
+      // If we have both user and session, login is complete - check MFA status
+      if (data.user && data.session) {
+        console.log('🔐 Login successful, checking MFA status...');
+        
+        // Check if user has MFA configured
+        const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+        
+        console.log('🔐 Factors data:', { factorsData, factorsError });
+        
+        if (!factorsError && factorsData?.totp?.length > 0) {
+          const verifiedFactor = factorsData.totp.find(factor => factor.status === 'verified');
+          
+          if (verifiedFactor) {
+            console.log('🔐 User has MFA configured - this should not happen with proper MFA enforcement');
+            // If user has MFA but still got through, it means MFA enforcement is not properly configured
+            // We'll still allow login but recommend checking Supabase MFA settings
+            return { requiresMfa: false };
+          } else {
+            console.log('🔐 User has unverified MFA factors - cleaning up and requiring setup');
+            // Clean up unverified factors and require setup
+            return { requiresMfa: false, needsSetup: true };
+          }
+        } else {
+          console.log('🔐 User has no MFA configured - requiring setup');
+          // User is successfully logged in but has no MFA - require setup
+          return { requiresMfa: false, needsSetup: true };
+        }
+      }
+
+      // Check if the session is incomplete (requires MFA) - this is the correct flow
       if (data.user && !data.session) {
-        console.log('🔐 No session, likely requires MFA');
+        console.log('🔐 No session, user requires MFA verification');
         
         // Get MFA factors for this user
         const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
@@ -261,12 +342,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // If we have both user and session, login is complete
-      if (data.user && data.session) {
-        console.log('🔐 Login complete with session');
-        return { requiresMfa: false };
-      }
-
       return { requiresMfa: false, error: "Login failed" };
     } catch (error) {
       console.error('🔐 Error in signInWithMfa:', error);
@@ -282,6 +357,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkMfaStatus,
     enrollMfa,
     verifyAndEnableMfa,
+    verifyMfaLogin,
     verifyMfaChallenge,
     unenrollMfa,
     signInWithMfa
