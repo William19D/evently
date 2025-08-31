@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import authBackground from "@/assets/auth-background.jpg";
+import LoginTestHelper from "@/components/LoginTestHelper";
 
 const ClientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -31,18 +32,29 @@ const ClientLogin = () => {
       }
     });
 
-    // Listen for auth changes - Google OAuth principalmente
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state change:', { event, hasSession: !!session, hasUser: !!session?.user });
+      console.log('🔄 ClientLogin - Auth state change:', { 
+        event, 
+        hasSession: !!session, 
+        hasUser: !!session?.user,
+        userEmail: session?.user?.email 
+      });
       
       if (event === 'SIGNED_IN' && session) {
-        console.log('✅ Google login successful:', session.user.email);
+        console.log('✅ Login successful:', {
+          email: session.user.email,
+          provider: session.user.app_metadata.provider
+        });
         
-        // Dar tiempo para que se procese completamente la sesión
+        // Pequeño delay para asegurar que el estado se actualice
         setTimeout(() => {
+          const isOAuth = session.user.app_metadata.provider === 'google';
           toast({
             title: "¡Bienvenido!",
-            description: "Has iniciado sesión correctamente con Google.",
+            description: isOAuth 
+              ? "Has iniciado sesión correctamente con Google." 
+              : "Has iniciado sesión correctamente.",
           });
           navigate("/");
         }, 100);
@@ -183,6 +195,8 @@ const ClientLogin = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            <LoginTestHelper />
+            
             {errors.general && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -230,6 +244,7 @@ const ClientLogin = () => {
                     placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
+                    onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
                     className={`pl-10 transition-colors ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
@@ -249,6 +264,7 @@ const ClientLogin = () => {
                     placeholder="Tu contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
                     className={`pl-10 pr-10 transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />

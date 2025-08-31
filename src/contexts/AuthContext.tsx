@@ -26,10 +26,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isMfaEnabled, setIsMfaEnabled] = useState(false);
 
   useEffect(() => {
-    // Detectar y manejar hash fragments de OAuth automáticamente
+    // Detectar y manejar hash fragments de OAuth SOLO si estamos en una ruta de callback o si hay tokens
     const handleOAuthCallback = () => {
-      if (window.location.hash.includes('access_token')) {
-        console.log('🔄 OAuth callback detected, processing...');
+      const isCallbackRoute = window.location.pathname.includes('/auth/callback');
+      const hasOAuthTokens = window.location.hash.includes('access_token');
+      
+      if (hasOAuthTokens && (isCallbackRoute || window.location.hash.includes('type=recovery'))) {
+        console.log('🔄 OAuth callback detected, processing...', { 
+          isCallbackRoute, 
+          hasOAuthTokens,
+          path: window.location.pathname,
+          hash: window.location.hash.substring(0, 50) + '...'
+        });
+        
         // Supabase procesará automáticamente el hash fragment
         supabase.auth.getSession().then(({ data: { session }, error }) => {
           if (error) {
@@ -48,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('🔍 Initial session check:', { hasSession: !!session, hasUser: !!session?.user });
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -59,7 +69,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔄 Auth state change:', { event, hasSession: !!session });
+        console.log('🔄 AuthContext - Auth state change:', { 
+          event, 
+          hasSession: !!session,
+          userEmail: session?.user?.email,
+          provider: session?.user?.app_metadata?.provider
+        });
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -335,7 +350,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signInWithMfa = async (email: string, password: string): Promise<{ requiresMfa: boolean; mfaData?: any; error?: string; needsSetup?: boolean }> => {
     try {
-      console.log('🔐 Starting sign in process...');
+      console.log('🔐 Starting sign in process for:', email);
       
       // Try to sign in with email and password
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -343,36 +358,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         password
       });
 
-      console.log('🔐 Sign in response:', { data, error });
+      console.log('🔐 Sign in response:', { 
+        hasUser: !!data.user, 
+        hasSession: !!data.session, 
+        error: error?.message 
+      });
 
       if (error) {
+        console.error('🔐 Authentication error:', error.message);
         return { requiresMfa: false, error: error.message };
       }
 
-      // Check if the user has MFA enabled and it's enforced
+      if (!data.user) {
+        console.error('🔐 No user returned from authentication');
+        return { requiresMfa: false, error: "Authentication failed" };
+      }
+
+      // Si tenemos usuario Y sesión, el login está completo (usuario sin MFA)
+      if (data.user && data.session) {
+        console.log('✅ Login successful with session - no MFA required');
+        return { requiresMfa: false };
+      }
+
+      // Si tenemos usuario pero NO sesión, el usuario tiene MFA habilitado
       if (data.user && !data.session) {
-        console.log('🔐 No session - user has MFA enabled and must verify');
+        console.log('🔐 User authenticated but no session - checking MFA requirement');
         
         // Get MFA factors for this user
         const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
         
-        console.log('🔐 Factors data:', { factorsData, factorsError });
+        console.log('🔐 MFA factors check:', { 
+          hasFactors: !!factorsData?.totp?.length, 
+          factorCount: factorsData?.totp?.length || 0,
+          factorsError: factorsError?.message 
+        });
         
         if (!factorsError && factorsData?.totp?.length > 0) {
           const verifiedFactor = factorsData.totp.find(factor => factor.status === 'verified');
           
           if (verifiedFactor) {
-            console.log('🔐 Found verified TOTP factor, creating challenge');
+            console.log('🔐 Found verified TOTP factor, creating challenge for factor:', verifiedFactor.id);
             
             const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
               factorId: verifiedFactor.id
             });
 
             if (challengeError) {
-              console.error('🔐 Challenge error:', challengeError);
+              console.error('🔐 Challenge creation error:', challengeError.message);
               return { requiresMfa: false, error: "Error creating MFA challenge" };
             }
 
+            console.log('✅ MFA challenge created successfully');
             return {
               requiresMfa: true,
               mfaData: {
@@ -383,17 +419,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
           }
         }
+        
+        // Usuario autenticado pero sin factores MFA válidos
+        console.log('⚠️ User authenticated but no valid MFA factors found');
+        return { requiresMfa: false, error: "MFA setup required but not properly configured" };
       }
 
-      // If we have both user and session, login is complete
-      if (data.user && data.session) {
-        console.log('🔐 Login complete with session');
-        return { requiresMfa: false };
-      }
-
-      return { requiresMfa: false, error: "Login failed" };
+      // Caso inesperado
+      console.error('🔐 Unexpected authentication state');
+      return { requiresMfa: false, error: "Unexpected authentication state" };
+      
     } catch (error) {
-      console.error('🔐 Error in signInWithMfa:', error);
+      console.error('🔐 Exception in signInWithMfa:', error);
       return { requiresMfa: false, error: "Connection error" };
     }
   };
