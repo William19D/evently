@@ -76,11 +76,14 @@ const MfaSetup = () => {
           description: "Tu cuenta ahora está protegida con autenticación de dos factores.",
         });
       } else {
-        setError("Código incorrecto. Verifica el código generado por tu aplicación autenticadora.");
+        setError("Código incorrecto. Asegúrate de que:");
+        setTimeout(() => {
+          setError("• El código esté generado por tu app autenticadora\n• Sea el código más reciente (se actualiza cada 30 segundos)\n• Hayas escaneado el código QR correctamente");
+        }, 100);
         setVerificationCode("");
       }
     } catch (error) {
-      setError("Error al verificar el código. Inténtalo de nuevo.");
+      setError("Error de conexión. Verifica tu internet e inténtalo de nuevo.");
       setVerificationCode("");
     } finally {
       setIsLoading(false);
@@ -285,9 +288,16 @@ const MfaSetup = () => {
             {error && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{error}</AlertDescription>
+                <AlertDescription className="whitespace-pre-line">{error}</AlertDescription>
               </Alert>
             )}
+
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
+                <strong>Importante:</strong> El código cambia cada 30 segundos. Usa el código actual de tu app autenticadora.
+              </AlertDescription>
+            </Alert>
 
             <div className="flex justify-center">
               <InputOTP

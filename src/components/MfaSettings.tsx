@@ -107,25 +107,57 @@ const MfaSettings = () => {
     setError("");
 
     try {
-      // First get the current factor ID
-      const { data } = await supabase.auth.mfa.listFactors();
-      const totpFactor = data?.totp?.find(factor => factor.status === 'verified');
+      // First verify the code by creating a challenge
+      const { data: factorsData } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factorsData?.totp?.find(factor => factor.status === 'verified');
       
-      if (totpFactor) {
-        const success = await unenrollMfa(totpFactor.id);
-        
-        if (success) {
-          toast({
-            title: "MFA Desactivado",
-            description: "La autenticación de dos factores ha sido desactivada.",
-          });
-          setIsDisableOpen(false);
-          setDisableCode("");
-          await checkMfaStatus();
-        } else {
-          setError("No se pudo desactivar MFA. Código incorrecto.");
-          setDisableCode("");
-        }
+      if (!totpFactor) {
+        setError("No se encontró factor MFA verificado.");
+        setDisableCode("");
+        setIsLoading(false);
+        return;
+      }
+
+      // Create challenge to verify the code
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId: totpFactor.id
+      });
+
+      if (challengeError) {
+        setError("Error al crear verificación. Inténtalo de nuevo.");
+        setDisableCode("");
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify the code
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId: totpFactor.id,
+        challengeId: challengeData.id,
+        code: disableCode
+      });
+
+      if (verifyError) {
+        setError("Código incorrecto. Verifica el código de tu app autenticadora.");
+        setDisableCode("");
+        setIsLoading(false);
+        return;
+      }
+
+      // If verification successful, unenroll the factor
+      const success = await unenrollMfa(totpFactor.id);
+      
+      if (success) {
+        toast({
+          title: "MFA Desactivado",
+          description: "La autenticación de dos factores ha sido desactivada.",
+        });
+        setIsDisableOpen(false);
+        setDisableCode("");
+        await checkMfaStatus();
+      } else {
+        setError("No se pudo desactivar MFA. Inténtalo de nuevo.");
+        setDisableCode("");
       }
     } catch (error) {
       setError("Error al desactivar MFA.");

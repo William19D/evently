@@ -11,7 +11,7 @@ interface AuthContextType {
   enrollMfa: () => Promise<{ qrCode: string; secret: string; factorId: string } | null>;
   verifyAndEnableMfa: (code: string, factorId: string) => Promise<boolean>;
   verifyMfaChallenge: (code: string, factorId: string) => Promise<boolean>;
-  unenrollMfa: (factorId: string) => Promise<boolean>;
+  unenrollMfa: (factorId?: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -72,9 +72,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const enrollMfa = async (): Promise<{ qrCode: string; secret: string; factorId: string } | null> => {
     try {
+      // First, check if there's already an unverified factor and clean it up
+      const { data: existingFactors, error: listError } = await supabase.auth.mfa.listFactors();
+      
+      if (listError) {
+        console.error('Error listing factors:', listError);
+      } else if (existingFactors?.totp) {
+        // Remove all unverified factors to start fresh
+        const unverifiedFactors = existingFactors.totp.filter(factor => factor.status === 'unverified');
+        for (const factor of unverifiedFactors) {
+          try {
+            await supabase.auth.mfa.unenroll({ factorId: factor.id });
+            console.log('Cleaned up unverified factor:', factor.id);
+          } catch (cleanupError) {
+            console.warn('Could not clean up unverified factor:', cleanupError);
+          }
+        }
+      }
+
+      // Now enroll a new factor
       const { data, error } = await supabase.auth.mfa.enroll({
         factorType: 'totp',
-        friendlyName: 'Evently MFA'
+        friendlyName: `Evently MFA ${new Date().toISOString()}`
       });
 
       if (error) {
@@ -83,8 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       return {
-        qrCode: data.qr_code,
-        secret: data.secret,
+        qrCode: data.totp.qr_code,
+        secret: data.totp.secret,
         factorId: data.id
       };
     } catch (error) {
@@ -95,16 +114,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyAndEnableMfa = async (code: string, factorId: string): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.mfa.challengeAndVerify({
-        factorId,
-        code
+      // Create a challenge for the factor to verify the code
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+        factorId
       });
 
-      if (error) {
-        console.error('Error verifying MFA enrollment:', error);
+      if (challengeError) {
+        console.error('Error creating MFA challenge:', challengeError);
         return false;
       }
 
+      // Verify the code against the challenge
+      const { error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challengeData.id,
+        code
+      });
+
+      if (verifyError) {
+        console.error('Error verifying MFA code:', verifyError);
+        return false;
+      }
+
+      // If verification is successful, the factor is automatically marked as verified
       setIsMfaEnabled(true);
       return true;
     } catch (error) {
@@ -124,10 +156,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const unenrollMfa = async (factorId: string): Promise<boolean> => {
+  const unenrollMfa = async (factorId?: string): Promise<boolean> => {
     try {
+      let targetFactorId = factorId;
+      
+      // If no factorId provided, get the first verified factor
+      if (!targetFactorId) {
+        const { data: factorsData, error: listError } = await supabase.auth.mfa.listFactors();
+        
+        if (listError) {
+          console.error('Error listing factors for unenroll:', listError);
+          return false;
+        }
+
+        const verifiedFactor = factorsData?.totp?.find(factor => factor.status === 'verified');
+        if (!verifiedFactor) {
+          console.error('No verified MFA factor found');
+          return false;
+        }
+        
+        targetFactorId = verifiedFactor.id;
+      }
+
       const { error } = await supabase.auth.mfa.unenroll({
-        factorId
+        factorId: targetFactorId
       });
 
       if (error) {
