@@ -11,7 +11,6 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import authBackground from "@/assets/auth-background.jpg";
-import LoginTestHelper from "@/components/LoginTestHelper";
 
 const ClientLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -27,41 +26,18 @@ const ClientLogin = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        console.log('👤 User already logged in, redirecting...');
         navigate("/");
       }
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 ClientLogin - Auth state change:', { 
-        event, 
-        hasSession: !!session, 
-        hasUser: !!session?.user,
-        userEmail: session?.user?.email 
-      });
-      
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
-        console.log('✅ Login successful:', {
-          email: session.user.email,
-          provider: session.user.app_metadata.provider
+        toast({
+          title: "¡Bienvenido!",
+          description: "Has iniciado sesión correctamente con Google.",
         });
-        
-        // Pequeño delay para asegurar que el estado se actualice
-        setTimeout(() => {
-          const isOAuth = session.user.app_metadata.provider === 'google';
-          toast({
-            title: "¡Bienvenido!",
-            description: isOAuth 
-              ? "Has iniciado sesión correctamente con Google." 
-              : "Has iniciado sesión correctamente.",
-          });
-          navigate("/");
-        }, 100);
-      }
-      
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('🔄 Token refreshed');
+        navigate("/");
       }
     });
 
@@ -195,8 +171,6 @@ const ClientLogin = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
-            <LoginTestHelper />
-            
             {errors.general && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -244,7 +218,6 @@ const ClientLogin = () => {
                     placeholder="tu@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
                     className={`pl-10 transition-colors ${errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
@@ -264,7 +237,6 @@ const ClientLogin = () => {
                     placeholder="Tu contraseña"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    onInput={(e) => setPassword((e.target as HTMLInputElement).value)}
                     className={`pl-10 pr-10 transition-colors ${errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}`}
                     required
                   />
