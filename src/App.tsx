@@ -23,6 +23,7 @@ import OwnerDashboard from "./pages/OwnerDashboard";
 import TwoFactorAuth from "./pages/TwoFactorAuth";
 import MfaSetup from "./pages/MfaSetup";
 import UserProfile from "./pages/UserProfile";
+import MfaDebug from "./components/MfaDebug";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AccessibilityPanel />
+            <MfaDebug />
           </BrowserRouter>
         </AccessibilityProvider>
       </AuthProvider>

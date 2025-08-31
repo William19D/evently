@@ -20,7 +20,7 @@ const ClientLogin = () => {
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { checkMfaStatus } = useAuth();
+  const { signInWithMfa } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -102,59 +102,21 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
+      const result = await signInWithMfa(email, password);
+      
+      if (result.error) {
         setErrors({
-          general: "Credenciales incorrectas. Verifica tu email y contraseña."
+          general: result.error.includes('Invalid') ? "Credenciales incorrectas. Verifica tu email y contraseña." : result.error
         });
-      } else if (data.user) {
-        // Check if user has MFA enabled
-        const hasMfa = await checkMfaStatus();
-        
-        if (hasMfa) {
-          // Get MFA factors
-          const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
-          
-          if (factorsError) {
-            setErrors({
-              general: "Error al verificar configuración de seguridad."
-            });
-            return;
+      } else if (result.requiresMfa && result.mfaData) {
+        // Navigate to MFA verification
+        navigate("/two-factor-auth", {
+          state: {
+            mfaData: result.mfaData
           }
-
-          const totpFactor = factorsData?.totp?.find(factor => factor.status === 'verified');
-          
-          if (totpFactor) {
-            // Create MFA challenge
-            const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-              factorId: totpFactor.id
-            });
-
-            if (challengeError) {
-              setErrors({
-                general: "Error al iniciar verificación de seguridad."
-              });
-              return;
-            }
-
-            // Navigate to MFA verification with challenge data
-            navigate("/two-factor-auth", {
-              state: {
-                mfaData: {
-                  factorId: totpFactor.id,
-                  challengeId: challengeData.id
-                }
-              }
-            });
-            return;
-          }
-        }
-
-        // No MFA or MFA not configured, proceed normally
+        });
+      } else {
+        // Login successful without MFA
         toast({
           title: "¡Bienvenido Cliente!",
           description: "Has iniciado sesión correctamente.",
@@ -162,6 +124,7 @@ const ClientLogin = () => {
         navigate("/");
       }
     } catch (error) {
+      console.error('Login error:', error);
       setErrors({
         general: "Error de conexión. Inténtalo de nuevo."
       });

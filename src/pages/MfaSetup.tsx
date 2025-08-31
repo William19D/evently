@@ -63,11 +63,20 @@ const MfaSetup = () => {
       return;
     }
 
+    console.log('Starting verification process with code:', verificationCode);
     setIsLoading(true);
     setError("");
 
+    // Add timeout to prevent hanging
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Timeout')), 10000)
+    );
+
     try {
-      const success = await verifyAndEnableMfa(verificationCode, factorId);
+      const verificationPromise = verifyAndEnableMfa(verificationCode, factorId);
+      const success = await Promise.race([verificationPromise, timeoutPromise]);
+      
+      console.log('Verification result:', success);
       
       if (success) {
         setStep('complete');
@@ -83,7 +92,12 @@ const MfaSetup = () => {
         setVerificationCode("");
       }
     } catch (error) {
-      setError("Error de conexión. Verifica tu internet e inténtalo de nuevo.");
+      console.error('Error in handleVerifyCode:', error);
+      if (error.message === 'Timeout') {
+        setError("La verificación tardó demasiado. Inténtalo de nuevo.");
+      } else {
+        setError("Error de conexión. Verifica tu internet e inténtalo de nuevo.");
+      }
       setVerificationCode("");
     } finally {
       setIsLoading(false);

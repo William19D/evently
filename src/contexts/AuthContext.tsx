@@ -12,6 +12,7 @@ interface AuthContextType {
   verifyAndEnableMfa: (code: string, factorId: string) => Promise<boolean>;
   verifyMfaChallenge: (code: string, factorId: string) => Promise<boolean>;
   unenrollMfa: (factorId?: string) => Promise<boolean>;
+  signInWithMfa: (email: string, password: string) => Promise<{ requiresMfa: boolean; mfaData?: any; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,7 +115,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyAndEnableMfa = async (code: string, factorId: string): Promise<boolean> => {
     try {
-      // Create a challenge for the factor to verify the code
+      console.log('Starting MFA verification with:', { code: code.length, factorId });
+      
+      // First create a challenge for the factor
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
         factorId
       });
@@ -124,20 +127,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      // Verify the code against the challenge
-      const { error: verifyError } = await supabase.auth.mfa.verify({
+      console.log('Challenge created:', challengeData);
+
+      // Then verify the code against the challenge
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
         factorId,
         challengeId: challengeData.id,
         code
       });
+
+      console.log('MFA verification response:', { data: verifyData, error: verifyError });
 
       if (verifyError) {
         console.error('Error verifying MFA code:', verifyError);
         return false;
       }
 
-      // If verification is successful, the factor is automatically marked as verified
-      setIsMfaEnabled(true);
+      console.log('MFA verification successful, updating state');
+      // If verification is successful, check MFA status
+      await checkMfaStatus();
       return true;
     } catch (error) {
       console.error('Error verifying MFA enrollment:', error);
@@ -195,6 +203,71 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithMfa = async (email: string, password: string): Promise<{ requiresMfa: boolean; mfaData?: any; error?: string }> => {
+    try {
+      console.log('🔐 Starting sign in process...');
+      
+      // Try to sign in with email and password
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      console.log('🔐 Sign in response:', { data, error });
+
+      if (error) {
+        return { requiresMfa: false, error: error.message };
+      }
+
+      // Check if the session is incomplete (requires MFA)
+      if (data.user && !data.session) {
+        console.log('🔐 No session, likely requires MFA');
+        
+        // Get MFA factors for this user
+        const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+        
+        console.log('🔐 Factors data:', { factorsData, factorsError });
+        
+        if (!factorsError && factorsData?.totp?.length > 0) {
+          const verifiedFactor = factorsData.totp.find(factor => factor.status === 'verified');
+          
+          if (verifiedFactor) {
+            console.log('🔐 Found verified TOTP factor, creating challenge');
+            
+            const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+              factorId: verifiedFactor.id
+            });
+
+            if (challengeError) {
+              console.error('🔐 Challenge error:', challengeError);
+              return { requiresMfa: false, error: "Error creating MFA challenge" };
+            }
+
+            return {
+              requiresMfa: true,
+              mfaData: {
+                factorId: verifiedFactor.id,
+                challengeId: challengeData.id,
+                email: email
+              }
+            };
+          }
+        }
+      }
+
+      // If we have both user and session, login is complete
+      if (data.user && data.session) {
+        console.log('🔐 Login complete with session');
+        return { requiresMfa: false };
+      }
+
+      return { requiresMfa: false, error: "Login failed" };
+    } catch (error) {
+      console.error('🔐 Error in signInWithMfa:', error);
+      return { requiresMfa: false, error: "Connection error" };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     session,
@@ -204,7 +277,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     enrollMfa,
     verifyAndEnableMfa,
     verifyMfaChallenge,
-    unenrollMfa
+    unenrollMfa,
+    signInWithMfa
   };
 
   return (
