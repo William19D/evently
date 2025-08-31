@@ -1,6 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { debugMfaConnection, debugMfaEnrollment, debugMfaChallenge, debugMfaVerify } from '@/utils/mfaDebug';
 
 interface AuthContextType {
   user: User | null;
@@ -55,53 +56,79 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const checkMfaStatus = async (): Promise<boolean> => {
+    console.log('🔍 === CHECKING MFA STATUS ===');
+    
     try {
-      const { data, error } = await supabase.auth.mfa.listFactors();
-      
-      if (error) {
-        console.error('Error checking MFA status:', error);
+      // Primero verificar diagnósticos
+      const diagnostics = await debugMfaConnection();
+      if (!diagnostics.success) {
+        console.log('❌ MFA diagnostics failed:', diagnostics.error);
+        setIsMfaEnabled(false);
         return false;
       }
 
-      const isEnabled = data?.totp?.some(factor => factor.status === 'verified') ?? false;
-      setIsMfaEnabled(isEnabled);
-      return isEnabled;
+      const { factors } = diagnostics;
+      const verifiedFactor = factors?.totp?.find((factor: any) => factor.status === 'verified');
+      const hasVerifiedMfa = !!verifiedFactor;
+      
+      console.log('🔍 MFA Status:', { 
+        hasVerifiedMfa, 
+        totalFactors: factors?.totp?.length || 0,
+        verifiedFactor: verifiedFactor?.id 
+      });
+      
+      setIsMfaEnabled(hasVerifiedMfa);
+      return hasVerifiedMfa;
     } catch (error) {
-      console.error('Error checking MFA status:', error);
+      console.error('❌ Error checking MFA status:', error);
+      setIsMfaEnabled(false);
       return false;
     }
   };
 
   const enrollMfa = async (): Promise<{ qrCode: string; secret: string; factorId: string } | null> => {
+    console.log('🔍 === STARTING MFA ENROLLMENT ===');
+    
     try {
-      // First, check if there's already an unverified factor and clean it up
-      const { data: existingFactors, error: listError } = await supabase.auth.mfa.listFactors();
-      
-      if (listError) {
-        console.error('Error listing factors:', listError);
-      } else if (existingFactors?.totp) {
-        // Remove all unverified factors to start fresh
-        const unverifiedFactors = existingFactors.totp.filter(factor => factor.status === 'unverified');
+      // Primero verificar diagnósticos
+      const diagnostics = await debugMfaConnection();
+      if (!diagnostics.success) {
+        console.error('❌ Cannot enroll MFA - diagnostics failed:', diagnostics.error);
+        return null;
+      }
+
+      // Limpiar factores no verificados existentes
+      console.log('🧹 Cleaning up existing unverified factors...');
+      const { factors } = diagnostics;
+      if (factors?.totp) {
+        const unverifiedFactors = factors.totp.filter((factor: any) => factor.status === 'unverified');
+        console.log('🧹 Found unverified factors:', unverifiedFactors.length);
+        
         for (const factor of unverifiedFactors) {
           try {
             await supabase.auth.mfa.unenroll({ factorId: factor.id });
-            console.log('Cleaned up unverified factor:', factor.id);
+            console.log('✅ Cleaned up unverified factor:', factor.id);
           } catch (cleanupError) {
-            console.warn('Could not clean up unverified factor:', cleanupError);
+            console.warn('⚠️ Could not clean up factor:', factor.id, cleanupError);
           }
         }
       }
 
-      // Now enroll a new factor
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: `Evently MFA ${new Date().toISOString()}`
-      });
-
-      if (error) {
-        console.error('Error enrolling MFA:', error);
+      // Enrollment con debug
+      console.log('📱 Starting MFA enrollment...');
+      const enrollmentResult = await debugMfaEnrollment();
+      
+      if (!enrollmentResult.success) {
+        console.error('❌ MFA enrollment failed:', enrollmentResult.error);
         return null;
       }
+
+      const { data } = enrollmentResult;
+      console.log('✅ MFA enrolled successfully:', {
+        factorId: data.id,
+        hasQrCode: !!data.totp?.qr_code,
+        hasSecret: !!data.totp?.secret
+      });
 
       return {
         qrCode: data.totp.qr_code,
@@ -109,31 +136,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         factorId: data.id
       };
     } catch (error) {
-      console.error('Error enrolling MFA:', error);
+      console.error('❌ Error in enrollMfa:', error);
       return null;
     }
   };
 
   const verifyAndEnableMfa = async (code: string, factorId: string): Promise<boolean> => {
+    console.log('🔍 === VERIFYING AND ENABLING MFA ===');
+    console.log('🔍 Input params:', { codeLength: code.length, factorId });
+    
     try {
-      console.log('Starting MFA verification with:', { codeLength: code.length, code: code, factorId });
-      
       if (code.length !== 6) {
-        console.error('Invalid code length:', code.length);
+        console.error('❌ Invalid code length:', code.length);
         return false;
       }
       
-      // First create a challenge for the factor
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId
-      });
-
-      if (challengeError) {
-        console.error('Error creating MFA challenge:', challengeError);
+      // Crear challenge con debug
+      console.log('🎯 Creating MFA challenge...');
+      const challengeResult = await debugMfaChallenge(factorId);
+      
+      if (!challengeResult.success) {
+        console.error('❌ Failed to create challenge:', challengeResult.error);
         return false;
       }
 
-      console.log('Challenge created:', challengeData);
+      const { data: challengeData } = challengeResult;
+      console.log('✅ Challenge created:', challengeData.id);
+
+      // Verificar código con debug
+      console.log('🔐 Verifying MFA code...');
+      const verifyResult = await debugMfaVerify(factorId, challengeData.id, code);
+      
+      if (!verifyResult.success) {
+        console.error('❌ MFA verification failed:', verifyResult.error);
+        return false;
+      }
+
+      console.log('✅ MFA verification successful');
+      
+      // Actualizar estado MFA
+      await checkMfaStatus();
+      return true;
 
       // Then verify the code against the challenge
       console.log('🔐 About to verify MFA code with challenge ID:', challengeData.id);

@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import MfaSettings from "@/components/MfaSettings";
+import MfaDiagnostics from "@/components/MfaDiagnostics";
 
 const UserProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -228,6 +229,11 @@ const UserProfile = () => {
 
             {/* MFA Settings */}
             <MfaSettings />
+            
+            {/* MFA Diagnostics - Solo en desarrollo */}
+            {process.env.NODE_ENV === 'development' && (
+              <MfaDiagnostics />
+            )}
 
             {/* Account Actions */}
             <Card>
