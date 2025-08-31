@@ -63,7 +63,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
             <AccessibilityPanel />
-            <MfaDebug />
+            {/* <MfaDebug /> */}
           </BrowserRouter>
         </AccessibilityProvider>
       </AuthProvider>

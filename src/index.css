@@ -189,21 +189,407 @@ html.text-lg {
 
 /* High contrast mode */
 html.high-contrast {
-  filter: contrast(150%) brightness(1.1);
+  filter: contrast(200%) brightness(1.2);
 }
 
-html.high-contrast .bg-background {
+/* Background and text colors */
+html.high-contrast .bg-background,
+html.high-contrast body,
+html.high-contrast [data-theme] {
   background: #000000 !important;
-}
-
-html.high-contrast .text-foreground {
   color: #ffffff !important;
 }
 
-html.high-contrast .bg-card {
-  background: #1a1a1a !important;
+html.high-contrast .text-foreground,
+html.high-contrast .text-primary,
+html.high-contrast p,
+html.high-contrast span,
+html.high-contrast div,
+html.high-contrast h1,
+html.high-contrast h2,
+html.high-contrast h3,
+html.high-contrast h4,
+html.high-contrast h5,
+html.high-contrast h6 {
+  color: #ffffff !important;
 }
 
-html.high-contrast .border {
+html.high-contrast .text-muted-foreground,
+html.high-contrast .text-muted {
+  color: #cccccc !important;
+}
+
+/* Card and surface backgrounds */
+html.high-contrast .bg-card,
+html.high-contrast .bg-popover,
+html.high-contrast .bg-surface {
+  background: #1a1a1a !important;
   border-color: #ffffff !important;
+}
+
+/* Button styles */
+html.high-contrast button,
+html.high-contrast .btn {
+  border: 2px solid #ffffff !important;
+  font-weight: bold !important;
+}
+
+/* Primary buttons */
+html.high-contrast .bg-primary,
+html.high-contrast .btn-primary,
+html.high-contrast button[class*="primary"] {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast .bg-primary:hover,
+html.high-contrast .btn-primary:hover {
+  background: #cccccc !important;
+  color: #000000 !important;
+}
+
+/* Secondary buttons */
+html.high-contrast .bg-secondary,
+html.high-contrast .btn-secondary,
+html.high-contrast button[class*="secondary"] {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast .bg-secondary:hover,
+html.high-contrast .btn-secondary:hover {
+  background: #333333 !important;
+  color: #ffffff !important;
+}
+
+/* Outline buttons */
+html.high-contrast .btn-outline,
+html.high-contrast button[variant="outline"],
+html.high-contrast .border {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast .btn-outline:hover,
+html.high-contrast button[variant="outline"]:hover {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Ghost buttons */
+html.high-contrast .btn-ghost,
+html.high-contrast button[variant="ghost"] {
+  background: transparent !important;
+  color: #ffffff !important;
+  border: 1px solid #ffffff !important;
+}
+
+html.high-contrast .btn-ghost:hover,
+html.high-contrast button[variant="ghost"]:hover {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Input fields */
+html.high-contrast input,
+html.high-contrast textarea,
+html.high-contrast select {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast input::placeholder,
+html.high-contrast textarea::placeholder {
+  color: #cccccc !important;
+}
+
+/* Borders and dividers */
+html.high-contrast .border,
+html.high-contrast .border-border,
+html.high-contrast hr {
+  border-color: #ffffff !important;
+}
+
+/* Links */
+html.high-contrast a,
+html.high-contrast .link {
+  color: #ffffff !important;
+  text-decoration: underline !important;
+}
+
+html.high-contrast a:hover,
+html.high-contrast .link:hover {
+  color: #cccccc !important;
+}
+
+/* Muted backgrounds */
+html.high-contrast .bg-muted,
+html.high-contrast .bg-muted\/50 {
+  background: #333333 !important;
+  color: #ffffff !important;
+}
+
+/* Switch and checkbox components */
+html.high-contrast [role="switch"],
+html.high-contrast .switch,
+html.high-contrast input[type="checkbox"] {
+  border: 2px solid #ffffff !important;
+}
+
+/* Destructive/error states */
+html.high-contrast .bg-destructive,
+html.high-contrast .text-destructive,
+html.high-contrast .btn-destructive {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Success states */
+html.high-contrast .text-green-600,
+html.high-contrast .text-green-500 {
+  color: #ffffff !important;
+}
+
+/* Ensure icons are visible */
+html.high-contrast svg,
+html.high-contrast .icon {
+  color: inherit !important;
+  fill: currentColor !important;
+}
+
+/* Specific shadcn/ui component overrides */
+html.high-contrast .slider-track {
+  background: #ffffff !important;
+}
+
+html.high-contrast .slider-range {
+  background: #000000 !important;
+}
+
+html.high-contrast .slider-thumb {
+  background: #ffffff !important;
+  border: 2px solid #000000 !important;
+}
+
+/* Toast and notification styles */
+html.high-contrast .toast,
+html.high-contrast .notification {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Dropdown and menu styles */
+html.high-contrast .dropdown-content,
+html.high-contrast .menu-content,
+html.high-contrast .popover-content {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast .dropdown-item:hover,
+html.high-contrast .menu-item:hover {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Badge and tag styles */
+html.high-contrast .badge,
+html.high-contrast .tag {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 1px solid #ffffff !important;
+}
+
+/* Progress bar styles */
+html.high-contrast .progress-bar {
+  background: #333333 !important;
+}
+
+html.high-contrast .progress-fill {
+  background: #ffffff !important;
+}
+
+/* Additional element-specific overrides */
+html.high-contrast .high-contrast-primary {
+  background: #ffffff !important;
+  color: #000000 !important;
+}
+
+html.high-contrast .high-contrast-secondary {
+  background: #000000 !important;
+  color: #ffffff !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Force override for common Tailwind classes */
+html.high-contrast .text-gray-500,
+html.high-contrast .text-gray-600,
+html.high-contrast .text-gray-700,
+html.high-contrast .text-gray-400 {
+  color: #cccccc !important;
+}
+
+html.high-contrast .bg-gray-50,
+html.high-contrast .bg-gray-100,
+html.high-contrast .bg-gray-200 {
+  background: #333333 !important;
+  color: #ffffff !important;
+}
+
+/* Ensure sufficient contrast for all interactive elements */
+html.high-contrast button:not(:disabled),
+html.high-contrast [role="button"]:not(:disabled),
+html.high-contrast a,
+html.high-contrast input,
+html.high-contrast select,
+html.high-contrast textarea {
+  outline: 2px solid transparent !important;
+  outline-offset: 2px !important;
+}
+
+html.high-contrast button:focus,
+html.high-contrast [role="button"]:focus,
+html.high-contrast a:focus,
+html.high-contrast input:focus,
+html.high-contrast select:focus,
+html.high-contrast textarea:focus {
+  outline: 3px solid #ffffff !important;
+  outline-offset: 2px !important;
+}
+
+/* Keyboard navigation enhanced focus */
+html.keyboard-navigation *:focus {
+  outline: 3px solid #ff6b35 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 1px rgba(255, 107, 53, 0.3), 0 0 20px rgba(255, 107, 53, 0.4) !important;
+  position: relative !important;
+  z-index: 1000 !important;
+}
+
+html.keyboard-navigation button:focus,
+html.keyboard-navigation a:focus,
+html.keyboard-navigation input:focus,
+html.keyboard-navigation select:focus,
+html.keyboard-navigation textarea:focus {
+  outline: 3px solid #ff6b35 !important;
+  outline-offset: 2px !important;
+  background-color: rgba(255, 107, 53, 0.1) !important;
+  transform: scale(1.02) !important;
+  transition: transform 0.1s ease !important;
+}
+
+/* Keyboard navigation guide */
+html.keyboard-navigation::before {
+  content: "Usa las flechas ↑↓←→ o Tab para navegar";
+  position: fixed;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 107, 53, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 10000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  animation: fadeInKeyboardGuide 0.3s ease-out;
+}
+
+@keyframes fadeInKeyboardGuide {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Hide guide on mobile */
+@media (max-width: 768px) {
+  html.keyboard-navigation::before {
+    display: none;
+  }
+}
+
+/* Reduced motion preferences */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+html.reduce-motion .animate-spin {
+  animation: none !important;
+}
+
+html.reduce-motion .animate-pulse {
+  animation: none !important;
+}
+
+html.reduce-motion .animate-bounce {
+  animation: none !important;
+}
+
+/* Accessibility panel mobile adjustments */
+@media (max-width: 768px) {
+  /* Ensure accessibility panel doesn't interfere with mobile navigation */
+  .accessibility-panel {
+    bottom: 80px !important; /* Account for mobile bottom navigation */
+    top: 60px !important; /* Account for mobile top navigation */
+    height: calc(100vh - 140px) !important;
+  }
+  
+  /* Reduce focus indicator size on mobile */
+  html.keyboard-navigation *:focus {
+    outline-width: 2px !important;
+    outline-offset: 1px !important;
+  }
+  
+  /* Smaller keyboard guide on mobile */
+  html.keyboard-navigation::before {
+    font-size: 12px !important;
+    padding: 6px 12px !important;
+    top: 20px !important; /* Higher position to avoid panel */
+  }
+}
+
+/* Ensure panel stays within viewport bounds */
+@media (max-height: 600px) {
+  .accessibility-panel {
+    height: calc(100vh - 40px) !important;
+    top: 20px !important;
+  }
+}
+
+/* Custom scrollbar for accessibility panel */
+.accessibility-panel .overflow-y-auto::-webkit-scrollbar {
+  width: 6px;
+}
+
+.accessibility-panel .overflow-y-auto::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 3px;
+}
+
+.accessibility-panel .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 3px;
+}
+
+.accessibility-panel .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--foreground));
 }
