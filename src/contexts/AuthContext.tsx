@@ -320,7 +320,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      // If we have both user and session, login is complete
+      // If we haveg both user and session, login is complete
       if (data.user && data.session) {
         console.log('🔐 Login complete with session');
         return { requiresMfa: false };
