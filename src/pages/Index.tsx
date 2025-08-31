@@ -6,6 +6,7 @@ import FeaturedSpaces from "@/components/FeaturedSpaces";
 import Categories from "@/components/Categories";
 import Footer from "@/components/Footer";
 import MfaPrompt from "@/components/MfaPrompt";
+import MfaBanner from "@/components/MfaBanner";
 import { useAuth } from "@/contexts/AuthContext";
 
 const Index = () => {
@@ -44,6 +45,14 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
+      
+      {/* MFA Banner para usuarios autenticados sin MFA */}
+      {user && (
+        <div className="container mx-auto px-4 pt-4">
+          <MfaBanner />
+        </div>
+      )}
+      
       <Hero />
       <FeaturedSpaces />
       <Categories />

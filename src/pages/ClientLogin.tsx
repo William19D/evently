@@ -109,21 +109,14 @@ const ClientLogin = () => {
           general: result.error.includes('Invalid') ? "Credenciales incorrectas. Verifica tu email y contraseña." : result.error
         });
       } else if (result.requiresMfa && result.mfaData) {
-        // Usuario existente con MFA configurado - pedir código
+        // Usuario con MFA habilitado - pedir código de verificación
         navigate("/two-factor-auth", {
           state: {
             mfaData: result.mfaData
           }
         });
-      } else if (result.needsSetup) {
-        // Usuario nuevo o sin MFA - obligar a configurar MFA
-        toast({
-          title: "Configuración de Seguridad Requerida",
-          description: "Debes configurar la autenticación de dos factores para continuar.",
-        });
-        navigate("/mfa-setup");
       } else {
-        // Login exitoso (no debería pasar si MFA está configurado correctamente)
+        // Login exitoso - permitir acceso sin MFA obligatorio
         toast({
           title: "¡Bienvenido Cliente!",
           description: "Has iniciado sesión correctamente.",

@@ -138,30 +138,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Then verify the code against the challenge
       console.log('🔐 About to verify MFA code with challenge ID:', challengeData.id);
       
-      let verifyData, verifyError;
-      
-      try {
-        // Add a timeout to prevent hanging
-        const verifyPromise = supabase.auth.mfa.verify({
-          factorId,
-          challengeId: challengeData.id,
-          code
-        });
-        
-        const timeoutPromise = new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('MFA verification timeout')), 15000)
-        );
-        
-        const result = await Promise.race([verifyPromise, timeoutPromise]) as any;
-        verifyData = result.data;
-        verifyError = result.error;
-      } catch (error: any) {
-        if (error.message === 'MFA verification timeout') {
-          console.error('🔐 MFA verification timed out');
-          return false;
-        }
-        throw error;
-      }
+      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId: challengeData.id,
+        code
+      });
 
       console.log('🔐 MFA verification response:', { data: verifyData, error: verifyError });
 
@@ -203,8 +184,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
 
-      console.log('🔒 MFA login verification successful');
-      return true;
+      if (verifyData) {
+        console.log('🔒 MFA login verification successful, checking session...');
+        
+        // Wait a moment for session to be established
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Check if we now have a session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('Error getting session after MFA verification:', sessionError);
+          return false;
+        }
+        
+        if (session) {
+          console.log('🔒 Session established successfully after MFA');
+          // Update the auth context state
+          setSession(session);
+          setUser(session.user);
+          return true;
+        } else {
+          console.error('🔒 No session found after MFA verification');
+          return false;
+        }
+      }
+
+      console.log('🔒 No verification data returned');
+      return false;
     } catch (error) {
       console.error('Error verifying MFA login:', error);
       return false;
@@ -277,38 +284,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { requiresMfa: false, error: error.message };
       }
 
-      // If we have both user and session, login is complete - check MFA status
-      if (data.user && data.session) {
-        console.log('🔐 Login successful, checking MFA status...');
-        
-        // Check if user has MFA configured
-        const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
-        
-        console.log('🔐 Factors data:', { factorsData, factorsError });
-        
-        if (!factorsError && factorsData?.totp?.length > 0) {
-          const verifiedFactor = factorsData.totp.find(factor => factor.status === 'verified');
-          
-          if (verifiedFactor) {
-            console.log('🔐 User has MFA configured - this should not happen with proper MFA enforcement');
-            // If user has MFA but still got through, it means MFA enforcement is not properly configured
-            // We'll still allow login but recommend checking Supabase MFA settings
-            return { requiresMfa: false };
-          } else {
-            console.log('🔐 User has unverified MFA factors - cleaning up and requiring setup');
-            // Clean up unverified factors and require setup
-            return { requiresMfa: false, needsSetup: true };
-          }
-        } else {
-          console.log('🔐 User has no MFA configured - requiring setup');
-          // User is successfully logged in but has no MFA - require setup
-          return { requiresMfa: false, needsSetup: true };
-        }
-      }
-
-      // Check if the session is incomplete (requires MFA) - this is the correct flow
+      // Check if the user has MFA enabled and it's enforced
       if (data.user && !data.session) {
-        console.log('🔐 No session, user requires MFA verification');
+        console.log('🔐 No session - user has MFA enabled and must verify');
         
         // Get MFA factors for this user
         const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
@@ -340,6 +318,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
           }
         }
+      }
+
+      // If we have both user and session, login is complete
+      if (data.user && data.session) {
+        console.log('🔐 Login complete with session');
+        return { requiresMfa: false };
       }
 
       return { requiresMfa: false, error: "Login failed" };
