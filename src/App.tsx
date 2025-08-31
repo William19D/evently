@@ -24,6 +24,7 @@ import TwoFactorAuth from "./pages/TwoFactorAuth";
 import MfaSetup from "./pages/MfaSetup";
 import UserProfile from "./pages/UserProfile";
 import MfaDebug from "./components/MfaDebug";
+import AuthCallback from "./pages/AuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +44,7 @@ const App = () => (
               <Route path="/register-selection" element={<RegisterSelection />} />
               <Route path="/login/client" element={<ClientLogin />} />
               <Route path="/login/owner" element={<OwnerLogin />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/register/client" element={<ClientRegister />} />
               <Route path="/register/owner" element={<OwnerRegister />} />
               {/* Legacy routes for backwards compatibility */}

@@ -26,6 +26,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isMfaEnabled, setIsMfaEnabled] = useState(false);
 
   useEffect(() => {
+    // Detectar y manejar hash fragments de OAuth automáticamente
+    const handleOAuthCallback = () => {
+      if (window.location.hash.includes('access_token')) {
+        console.log('🔄 OAuth callback detected, processing...');
+        // Supabase procesará automáticamente el hash fragment
+        supabase.auth.getSession().then(({ data: { session }, error }) => {
+          if (error) {
+            console.error('❌ OAuth processing error:', error);
+          } else if (session) {
+            console.log('✅ OAuth session established:', session.user.email);
+            // Limpiar hash de la URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+          }
+        });
+      }
+    };
+
+    // Ejecutar al cargar la página
+    handleOAuthCallback();
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -39,6 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('🔄 Auth state change:', { event, hasSession: !!session });
+        
         setSession(session);
         setUser(session?.user ?? null);
         

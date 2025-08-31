@@ -26,18 +26,30 @@ const ClientLogin = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
+        console.log('👤 User already logged in, redirecting...');
         navigate("/");
       }
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Listen for auth changes - Google OAuth principalmente
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state change:', { event, hasSession: !!session, hasUser: !!session?.user });
+      
       if (event === 'SIGNED_IN' && session) {
-        toast({
-          title: "¡Bienvenido!",
-          description: "Has iniciado sesión correctamente con Google.",
-        });
-        navigate("/");
+        console.log('✅ Google login successful:', session.user.email);
+        
+        // Dar tiempo para que se procese completamente la sesión
+        setTimeout(() => {
+          toast({
+            title: "¡Bienvenido!",
+            description: "Has iniciado sesión correctamente con Google.",
+          });
+          navigate("/");
+        }, 100);
+      }
+      
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('🔄 Token refreshed');
       }
     });
 
