@@ -115,7 +115,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyAndEnableMfa = async (code: string, factorId: string): Promise<boolean> => {
     try {
-      console.log('Starting MFA verification with:', { code: code.length, factorId });
+      console.log('Starting MFA verification with:', { codeLength: code.length, code: code, factorId });
+      
+      if (code.length !== 6) {
+        console.error('Invalid code length:', code.length);
+        return false;
+      }
       
       // First create a challenge for the factor
       const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
@@ -144,6 +149,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       console.log('MFA verification successful, updating state');
+      
       // If verification is successful, check MFA status
       await checkMfaStatus();
       return true;

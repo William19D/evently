@@ -63,42 +63,37 @@ const MfaSetup = () => {
       return;
     }
 
-    console.log('Starting verification process with code:', verificationCode);
+    console.log('🔐 Starting verification process with code:', verificationCode);
+    console.log('🔐 Code length:', verificationCode.length);
+    console.log('🔐 Factor ID:', factorId);
+    
     setIsLoading(true);
     setError("");
 
-    // Add timeout to prevent hanging
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Timeout')), 10000)
-    );
-
     try {
-      const verificationPromise = verifyAndEnableMfa(verificationCode, factorId);
-      const success = await Promise.race([verificationPromise, timeoutPromise]);
+      console.log('🔐 Calling verifyAndEnableMfa...');
+      const success = await verifyAndEnableMfa(verificationCode, factorId);
       
-      console.log('Verification result:', success);
+      console.log('🔐 Verification result:', success);
       
       if (success) {
+        console.log('🔐 Success! Moving to complete step');
         setStep('complete');
         toast({
           title: "¡MFA Activado!",
           description: "Tu cuenta ahora está protegida con autenticación de dos factores.",
         });
       } else {
-        setError("Código incorrecto. Asegúrate de que:");
+        console.log('🔐 Verification failed');
+        setError("Código incorrecto. Verifica que:");
         setTimeout(() => {
-          setError("• El código esté generado por tu app autenticadora\n• Sea el código más reciente (se actualiza cada 30 segundos)\n• Hayas escaneado el código QR correctamente");
+          setError("• El código sea el actual de tu app autenticadora\n• Hayas esperado a que se genere un nuevo código\n• La hora de tu dispositivo esté sincronizada");
         }, 100);
         setVerificationCode("");
       }
     } catch (error) {
-      console.error('Error in handleVerifyCode:', error);
-      if (error.message === 'Timeout') {
-        setError("La verificación tardó demasiado. Inténtalo de nuevo.");
-      } else {
-        setError("Error de conexión. Verifica tu internet e inténtalo de nuevo.");
-      }
-      setVerificationCode("");
+      console.error('🔐 Error in handleVerifyCode:', error);
+      setError("Error de conexión. Verifica tu internet e inténtalo de nuevo.");
     } finally {
       setIsLoading(false);
     }
