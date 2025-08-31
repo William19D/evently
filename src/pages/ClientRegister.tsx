@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,8 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Chrome, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientRegister = () => {
@@ -27,6 +28,28 @@ const ClientRegister = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/");
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        toast({
+          title: "¡Bienvenido!",
+          description: "Te has registrado correctamente con Google.",
+        });
+        navigate("/");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -78,6 +101,34 @@ const ClientRegister = () => {
     }
   };
 
+  const handleGoogleSignUp = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Error de autenticación",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo conectar con Google. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -88,16 +139,44 @@ const ClientRegister = () => {
 
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "¡Cuenta de cliente creada!",
-        description: "Bienvenido a Evently. Redirigiendo al inicio de sesión...",
+    try {
+      const { error } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            first_name: formData.firstName,
+            last_name: formData.lastName,
+            phone: formData.phone
+          }
+        }
       });
-      setTimeout(() => {
+
+      if (error) {
+        if (error.message.includes('User already registered')) {
+          setErrors({
+            email: "Este email ya está registrado. Intenta iniciar sesión."
+          });
+        } else {
+          setErrors({
+            general: error.message
+          });
+        }
+      } else {
+        toast({
+          title: "¡Cuenta creada!",
+          description: "Revisa tu email para confirmar tu cuenta.",
+        });
         navigate("/login/client");
-      }, 1000);
-    }, 1500);
+      }
+    } catch (error) {
+      setErrors({
+        general: "Error de conexión. Inténtalo de nuevo."
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -144,6 +223,28 @@ const ClientRegister = () => {
                 <AlertDescription>Por favor corrige los errores en el formulario</AlertDescription>
               </Alert>
             )}
+
+            <div className="space-y-3">
+              <Button 
+                variant="outline" 
+                className="w-full hover:bg-primary/5 transition-colors" 
+                type="button"
+                onClick={handleGoogleSignUp}
+                disabled={isLoading}
+              >
+                <Chrome className="w-4 h-4 mr-2" />
+                {isLoading ? "Conectando..." : "Registrarse con Google"}
+              </Button>
+            </div>
+
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-card px-2 text-muted-foreground">O regístrate con email</span>
+              </div>
+            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">

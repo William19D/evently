@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientLogin = () => {
@@ -18,6 +19,28 @@ const ClientLogin = () => {
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check if user is already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/");
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        toast({
+          title: "¡Bienvenido!",
+          description: "Has iniciado sesión correctamente con Google.",
+        });
+        navigate("/");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
 
   const validateForm = () => {
     const newErrors: {email?: string, password?: string} = {};
@@ -38,6 +61,34 @@ const ClientLogin = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        toast({
+          title: "Error de autenticación",
+          description: error.message,
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo conectar con Google. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
@@ -48,20 +99,30 @@ const ClientLogin = () => {
     
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
-      if (email === "cliente@evently.com" && password === "123456") {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        setErrors({
+          general: "Credenciales incorrectas. Verifica tu email y contraseña."
+        });
+      } else {
         toast({
           title: "¡Bienvenido Cliente!",
           description: "Has iniciado sesión correctamente.",
         });
         navigate("/");
-      } else {
-        setErrors({
-          general: "Credenciales incorrectas. Usa cliente@evently.com / 123456 para probar."
-        });
       }
-    }, 1500);
+    } catch (error) {
+      setErrors({
+        general: "Error de conexión. Inténtalo de nuevo."
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -112,14 +173,20 @@ const ClientLogin = () => {
             <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-700 dark:text-blue-300">
-                <strong>Demo:</strong> cliente@evently.com / 123456
+                <strong>Opciones:</strong> Usa Google OAuth o crea una cuenta con email/contraseña
               </AlertDescription>
             </Alert>
 
             <div className="space-y-3">
-              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
+              <Button 
+                variant="outline" 
+                className="w-full hover:bg-primary/5 transition-colors" 
+                type="button"
+                onClick={handleGoogleSignIn}
+                disabled={isLoading}
+              >
                 <Chrome className="w-4 h-4 mr-2" />
-                Continuar con Google
+                {isLoading ? "Conectando..." : "Continuar con Google"}
               </Button>
             </div>
 
