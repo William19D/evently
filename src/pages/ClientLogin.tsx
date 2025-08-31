@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, ArrowLeft, Facebook, Chrome, AlertCircle, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import authBackground from "@/assets/auth-background.jpg";
 
@@ -120,10 +120,6 @@ const ClientLogin = () => {
               <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
                 <Chrome className="w-4 h-4 mr-2" />
                 Continuar con Google
-              </Button>
-              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
-                <Facebook className="w-4 h-4 mr-2" />
-                Continuar con Facebook
               </Button>
             </div>
 

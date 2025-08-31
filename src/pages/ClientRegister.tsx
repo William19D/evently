@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Facebook, Chrome, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import authBackground from "@/assets/auth-background.jpg";
 
@@ -144,26 +144,6 @@ const ClientRegister = () => {
                 <AlertDescription>Por favor corrige los errores en el formulario</AlertDescription>
               </Alert>
             )}
-
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
-                <Chrome className="w-4 h-4 mr-2" />
-                Registrarse con Google
-              </Button>
-              <Button variant="outline" className="w-full hover:bg-primary/5 transition-colors" type="button">
-                <Facebook className="w-4 h-4 mr-2" />
-                Registrarse with Facebook
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">O regístrate con email</span>
-              </div>
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">

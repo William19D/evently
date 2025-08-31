@@ -19,6 +19,7 @@ import Contact from "./pages/Contact";
 import FAQ from "./pages/FAQ";
 import PublishSpace from "./pages/PublishSpace";
 import OwnerDashboard from "./pages/OwnerDashboard";
+import TwoFactorAuth from "./pages/TwoFactorAuth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
             <Route path="/faq" element={<FAQ />} />
             <Route path="/publish-space" element={<PublishSpace />} />
             <Route path="/dashboard" element={<OwnerDashboard />} />
+            <Route path="/2fa" element={<TwoFactorAuth />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
