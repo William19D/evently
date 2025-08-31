@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientLogin = () => {
@@ -19,6 +20,7 @@ const ClientLogin = () => {
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { checkMfaStatus } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -100,7 +102,7 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
@@ -109,7 +111,50 @@ const ClientLogin = () => {
         setErrors({
           general: "Credenciales incorrectas. Verifica tu email y contraseña."
         });
-      } else {
+      } else if (data.user) {
+        // Check if user has MFA enabled
+        const hasMfa = await checkMfaStatus();
+        
+        if (hasMfa) {
+          // Get MFA factors
+          const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+          
+          if (factorsError) {
+            setErrors({
+              general: "Error al verificar configuración de seguridad."
+            });
+            return;
+          }
+
+          const totpFactor = factorsData?.totp?.find(factor => factor.status === 'verified');
+          
+          if (totpFactor) {
+            // Create MFA challenge
+            const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
+              factorId: totpFactor.id
+            });
+
+            if (challengeError) {
+              setErrors({
+                general: "Error al iniciar verificación de seguridad."
+              });
+              return;
+            }
+
+            // Navigate to MFA verification with challenge data
+            navigate("/two-factor-auth", {
+              state: {
+                mfaData: {
+                  factorId: totpFactor.id,
+                  challengeId: challengeData.id
+                }
+              }
+            });
+            return;
+          }
+        }
+
+        // No MFA or MFA not configured, proceed normally
         toast({
           title: "¡Bienvenido Cliente!",
           description: "Has iniciado sesión correctamente.",

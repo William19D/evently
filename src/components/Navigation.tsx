@@ -1,12 +1,49 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, User, Menu, Calendar, MapPin, ChevronDown, Building2 } from "lucide-react";
+import { Search, User, Menu, Calendar, MapPin, ChevronDown, Building2, LogOut, Shield, Settings } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, isMfaEnabled } = useAuth();
+  const { toast } = useToast();
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        toast({
+          title: "Error",
+          description: "No se pudo cerrar sesión. Inténtalo de nuevo.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Sesión cerrada",
+          description: "Has cerrado sesión correctamente.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Error de conexión. Inténtalo de nuevo.",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const getUserDisplayName = () => {
+    if (user?.user_metadata?.first_name) {
+      return `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim();
+    }
+    return user?.email?.split('@')[0] || 'Usuario';
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-card/80 backdrop-blur-sm border-b border-border">
@@ -34,44 +71,73 @@ const Navigation = () => {
 
           {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
-            
-            {/* Login Dropdown */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Iniciar Sesión
-                  <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56 bg-card border-border shadow-lg" align="end">
-                <DropdownMenuItem asChild>
-                  <Link to="/login/client" className="flex items-center gap-3">
-                    <User className="w-4 h-4 text-primary" />
-                    <div>
-                      <div className="font-medium">Soy Cliente</div>
-                      <div className="text-xs text-muted-foreground">Busco espacios para eventos</div>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/login/owner" className="flex items-center gap-3">
-                    <Building2 className="w-4 h-4 text-primary" />
-                    <div>
-                      <div className="font-medium">Soy Propietario</div>
-                      <div className="text-xs text-muted-foreground">Tengo espacios para alquilar</div>
-                    </div>
-                  </Link>
-                </DropdownMenuItem>
-                <div className="h-px bg-border my-1" />
-                <DropdownMenuItem asChild>
-                  <Link to="/register-selection" className="flex items-center gap-3 text-muted-foreground">
-                    <div className="w-4 h-4" />
-                    <div className="text-sm">¿No tienes cuenta? Regístrate</div>
-                  </Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {user ? (
+              /* Authenticated User Menu */
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    {getUserDisplayName()}
+                    {isMfaEnabled && <Shield className="w-3 h-3 text-green-600" />}
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-card border-border shadow-lg" align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/profile" className="flex items-center gap-3">
+                      <Settings className="w-4 h-4 text-primary" />
+                      <div>
+                        <div className="font-medium">Mi Perfil</div>
+                        <div className="text-xs text-muted-foreground">Configuración y seguridad</div>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  <div className="h-px bg-border my-1" />
+                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-3 text-destructive focus:text-destructive">
+                    <LogOut className="w-4 h-4" />
+                    <div className="font-medium">Cerrar Sesión</div>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              /* Guest Login Menu */
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    Iniciar Sesión
+                    <ChevronDown className="w-3 h-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-56 bg-card border-border shadow-lg" align="end">
+                  <DropdownMenuItem asChild>
+                    <Link to="/login/client" className="flex items-center gap-3">
+                      <User className="w-4 h-4 text-primary" />
+                      <div>
+                        <div className="font-medium">Soy Cliente</div>
+                        <div className="text-xs text-muted-foreground">Busco espacios para eventos</div>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/login/owner" className="flex items-center gap-3">
+                      <Building2 className="w-4 h-4 text-primary" />
+                      <div>
+                        <div className="font-medium">Soy Propietario</div>
+                        <div className="text-xs text-muted-foreground">Tengo espacios para alquilar</div>
+                      </div>
+                    </Link>
+                  </DropdownMenuItem>
+                  <div className="h-px bg-border my-1" />
+                  <DropdownMenuItem asChild>
+                    <Link to="/register-selection" className="flex items-center gap-3 text-muted-foreground">
+                      <div className="w-4 h-4" />
+                      <div className="text-sm">¿No tienes cuenta? Regístrate</div>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -100,28 +166,51 @@ const Navigation = () => {
                 Preguntas Frecuentes
               </Link>
               <div className="pt-4 border-t border-border">
-                
-                {/* Mobile Login Options */}
-                <div className="space-y-2">
-                  <div className="text-sm font-medium text-muted-foreground px-2">Iniciar Sesión</div>
-                  <Link to="/login/client">
-                    <Button variant="outline" className="w-full justify-start">
-                      <User className="w-4 h-4 mr-2" />
-                      Soy Cliente
+                {user ? (
+                  /* Mobile Authenticated Menu */
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground px-2 flex items-center gap-2">
+                      Hola, {getUserDisplayName()}
+                      {isMfaEnabled && <Shield className="w-3 h-3 text-green-600" />}
+                    </div>
+                    <Link to="/profile">
+                      <Button variant="outline" className="w-full justify-start">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Mi Perfil
+                      </Button>
+                    </Link>
+                    <Button 
+                      variant="ghost" 
+                      className="w-full justify-start text-destructive"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Cerrar Sesión
                     </Button>
-                  </Link>
-                  <Link to="/login/owner">
-                    <Button variant="outline" className="w-full justify-start">
-                      <Building2 className="w-4 h-4 mr-2" />
-                      Soy Propietario
-                    </Button>
-                  </Link>
-                  <Link to="/register-selection" className="block">
-                    <Button variant="ghost" className="w-full justify-start text-muted-foreground text-sm">
-                      ¿No tienes cuenta? Regístrate
-                    </Button>
-                  </Link>
-                </div>
+                  </div>
+                ) : (
+                  /* Mobile Login Options */
+                  <div className="space-y-2">
+                    <div className="text-sm font-medium text-muted-foreground px-2">Iniciar Sesión</div>
+                    <Link to="/login/client">
+                      <Button variant="outline" className="w-full justify-start">
+                        <User className="w-4 h-4 mr-2" />
+                        Soy Cliente
+                      </Button>
+                    </Link>
+                    <Link to="/login/owner">
+                      <Button variant="outline" className="w-full justify-start">
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Soy Propietario
+                      </Button>
+                    </Link>
+                    <Link to="/register-selection" className="block">
+                      <Button variant="ghost" className="w-full justify-start text-muted-foreground text-sm">
+                        ¿No tienes cuenta? Regístrate
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           </div>

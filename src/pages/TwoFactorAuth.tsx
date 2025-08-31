@@ -1,11 +1,13 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { ArrowLeft, Shield, AlertCircle, RotateCcw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const TwoFactorAuth = () => {
   const [otp, setOtp] = useState("");
@@ -13,11 +15,27 @@ const TwoFactorAuth = () => {
   const [error, setError] = useState("");
   const [canResend, setCanResend] = useState(false);
   const [countdown, setCountdown] = useState(30);
+  const [factorId, setFactorId] = useState<string>("");
+  const [challengeId, setChallengeId] = useState<string>("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { verifyMfaChallenge } = useAuth();
 
-  // Start countdown when component mounts
-  useState(() => {
+  // Get MFA challenge data from location state
+  const mfaData = location.state?.mfaData;
+
+  useEffect(() => {
+    // Redirect if no MFA data is available
+    if (!mfaData) {
+      navigate("/login/client");
+      return;
+    }
+
+    setFactorId(mfaData.factorId);
+    setChallengeId(mfaData.challengeId);
+
+    // Start countdown
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -30,7 +48,7 @@ const TwoFactorAuth = () => {
     }, 1000);
 
     return () => clearInterval(timer);
-  });
+  }, [mfaData, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,44 +61,75 @@ const TwoFactorAuth = () => {
     
     setIsLoading(true);
     
-    // Simulate OTP verification
-    setTimeout(() => {
-      setIsLoading(false);
-      if (otp === "123456") {
+    try {
+      const { data, error } = await supabase.auth.mfa.verify({
+        factorId,
+        challengeId,
+        code: otp
+      });
+
+      if (error) {
+        setError("Código incorrecto. Inténtalo de nuevo.");
+        setOtp("");
+      } else {
         toast({
           title: "Verificación exitosa",
           description: "Has completado la autenticación de dos factores.",
         });
         navigate("/");
-      } else {
-        setError("Código incorrecto. Inténtalo de nuevo.");
-        setOtp("");
       }
-    }, 1500);
+    } catch (error) {
+      setError("Error de conexión. Inténtalo de nuevo.");
+      setOtp("");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleResendCode = () => {
+  const handleResendCode = async () => {
+    if (!factorId) return;
+
     setCanResend(false);
     setCountdown(30);
     setOtp("");
     setError("");
-    
-    toast({
-      title: "Código reenviado",
-      description: "Se ha enviado un nuevo código a tu dispositivo.",
-    });
 
-    // Restart countdown
-    const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          clearInterval(timer);
-          return 0;
-        }
-        return prev - 1;
+    try {
+      // Create a new challenge
+      const { data, error } = await supabase.auth.mfa.challenge({
+        factorId
       });
-    }, 1000);
+
+      if (error) {
+        setError("No se pudo generar un nuevo código. Inténtalo de nuevo.");
+        setCanResend(true);
+        setCountdown(0);
+        return;
+      }
+
+      setChallengeId(data.id);
+      
+      toast({
+        title: "Nuevo código generado",
+        description: "Revisa tu app autenticadora para el nuevo código.",
+      });
+
+      // Restart countdown
+      const timer = setInterval(() => {
+        setCountdown((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error) {
+      setError("Error al generar nuevo código.");
+      setCanResend(true);
+      setCountdown(0);
+    }
   };
 
   return (
@@ -98,7 +147,7 @@ const TwoFactorAuth = () => {
             </div>
             <CardTitle className="text-2xl font-semibold">Verificación de Seguridad</CardTitle>
             <CardDescription>
-              Ingresa el código de 6 dígitos enviado a tu dispositivo
+              Ingresa el código de 6 dígitos de tu app autenticadora
             </CardDescription>
           </CardHeader>
 
@@ -113,7 +162,7 @@ const TwoFactorAuth = () => {
             <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-700 dark:text-blue-300">
-                <strong>Demo:</strong> Usa el código 123456 para continuar
+                <strong>Autenticación requerida:</strong> Ingresa el código de tu app autenticadora para continuar.
               </AlertDescription>
             </Alert>
 
@@ -157,11 +206,11 @@ const TwoFactorAuth = () => {
                       onClick={handleResendCode}
                     >
                       <RotateCcw className="w-4 h-4 mr-2" />
-                      Reenviar código
+                      Generar nuevo código
                     </Button>
                   ) : (
                     <span>
-                      Reenviar código en {countdown}s
+                      Nuevo código disponible en {countdown}s
                     </span>
                   )}
                 </div>
