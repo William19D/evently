@@ -8,7 +8,6 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import authBackground from "@/assets/auth-background.jpg";
 
@@ -20,29 +19,14 @@ const ClientLogin = () => {
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signInWithMfa } = useAuth();
+  const { user, signIn, signInWithGoogle, signInWithMfa } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/");
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        toast({
-          title: "¡Bienvenido!",
-          description: "Has iniciado sesión correctamente con Google.",
-        });
-        navigate("/");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, toast]);
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: {email?: string, password?: string} = {};
@@ -66,21 +50,10 @@ const ClientLogin = () => {
   const handleGoogleSignIn = async () => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) {
-        toast({
-          title: "Error de autenticación",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
+      await signInWithGoogle();
+      // The actual redirect and success handling will be done in AuthCallback
     } catch (error) {
+      console.error('Google sign in error:', error);
       toast({
         title: "Error",
         description: "No se pudo conectar con Google. Inténtalo de nuevo.",

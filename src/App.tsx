@@ -14,6 +14,7 @@ import ClientLogin from "./pages/ClientLogin";
 import OwnerLogin from "./pages/OwnerLogin";
 import ClientRegister from "./pages/ClientRegister";
 import OwnerRegister from "./pages/OwnerRegister";
+import AuthCallback from "./pages/AuthCallback";
 import EventDetails from "./pages/EventDetails";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
@@ -45,6 +46,7 @@ const App = () => (
               <Route path="/login/owner" element={<OwnerLogin />} />
               <Route path="/register/client" element={<ClientRegister />} />
               <Route path="/register/owner" element={<OwnerRegister />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               {/* Legacy routes for backwards compatibility */}
               <Route path="/login" element={<AuthSelection />} />
               <Route path="/register" element={<RegisterSelection />} />

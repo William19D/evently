@@ -229,7 +229,8 @@ html.high-contrast .bg-surface {
 
 /* Button styles */
 html.high-contrast button,
-html.high-contrast .btn {
+html.high-contrast .btn,
+html.high-contrast [role="button"] {
   border: 2px solid #ffffff !important;
   font-weight: bold !important;
 }
@@ -237,14 +238,16 @@ html.high-contrast .btn {
 /* Primary buttons */
 html.high-contrast .bg-primary,
 html.high-contrast .btn-primary,
-html.high-contrast button[class*="primary"] {
+html.high-contrast button[class*="primary"],
+html.high-contrast button.bg-primary {
   background: #ffffff !important;
   color: #000000 !important;
   border: 2px solid #ffffff !important;
 }
 
 html.high-contrast .bg-primary:hover,
-html.high-contrast .btn-primary:hover {
+html.high-contrast .btn-primary:hover,
+html.high-contrast button.bg-primary:hover {
   background: #cccccc !important;
   color: #000000 !important;
 }
@@ -252,21 +255,38 @@ html.high-contrast .btn-primary:hover {
 /* Secondary buttons */
 html.high-contrast .bg-secondary,
 html.high-contrast .btn-secondary,
-html.high-contrast button[class*="secondary"] {
+html.high-contrast button[class*="secondary"],
+html.high-contrast button.bg-secondary {
   background: #000000 !important;
   color: #ffffff !important;
   border: 2px solid #ffffff !important;
 }
 
 html.high-contrast .bg-secondary:hover,
-html.high-contrast .btn-secondary:hover {
+html.high-contrast .btn-secondary:hover,
+html.high-contrast button.bg-secondary:hover {
   background: #333333 !important;
   color: #ffffff !important;
+}
+
+/* Default buttons */
+html.high-contrast button:not([class*="outline"]):not([class*="ghost"]):not([class*="primary"]):not([class*="secondary"]):not([class*="destructive"]),
+html.high-contrast [role="button"]:not([class*="outline"]):not([class*="ghost"]):not([class*="primary"]):not([class*="secondary"]):not([class*="destructive"]) {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast button:not([class*="outline"]):not([class*="ghost"]):not([class*="primary"]):not([class*="secondary"]):not([class*="destructive"]):hover,
+html.high-contrast [role="button"]:not([class*="outline"]):not([class*="ghost"]):not([class*="primary"]):not([class*="secondary"]):not([class*="destructive"]):hover {
+  background: #cccccc !important;
+  color: #000000 !important;
 }
 
 /* Outline buttons */
 html.high-contrast .btn-outline,
 html.high-contrast button[variant="outline"],
+html.high-contrast button[class*="outline"],
 html.high-contrast .border {
   background: #000000 !important;
   color: #ffffff !important;
@@ -274,22 +294,90 @@ html.high-contrast .border {
 }
 
 html.high-contrast .btn-outline:hover,
-html.high-contrast button[variant="outline"]:hover {
+html.high-contrast button[variant="outline"]:hover,
+html.high-contrast button[class*="outline"]:hover {
   background: #ffffff !important;
   color: #000000 !important;
 }
 
 /* Ghost buttons */
 html.high-contrast .btn-ghost,
-html.high-contrast button[variant="ghost"] {
+html.high-contrast button[variant="ghost"],
+html.high-contrast button[class*="ghost"] {
   background: transparent !important;
   color: #ffffff !important;
   border: 1px solid #ffffff !important;
 }
 
 html.high-contrast .btn-ghost:hover,
-html.high-contrast button[variant="ghost"]:hover {
+html.high-contrast button[variant="ghost"]:hover,
+html.high-contrast button[class*="ghost"]:hover {
   background: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Destructive buttons */
+html.high-contrast .bg-destructive,
+html.high-contrast .text-destructive,
+html.high-contrast .btn-destructive,
+html.high-contrast button[class*="destructive"] {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast .bg-destructive:hover,
+html.high-contrast .btn-destructive:hover,
+html.high-contrast button[class*="destructive"]:hover {
+  background: #ffcccc !important;
+  color: #000000 !important;
+}
+
+/* Specific button text color fixes */
+html.high-contrast button *,
+html.high-contrast [role="button"] *,
+html.high-contrast .btn * {
+  color: inherit !important;
+}
+
+/* Google button and social media buttons */
+html.high-contrast button[class*="google"],
+html.high-contrast button[class*="social"],
+html.high-contrast .social-button {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast button[class*="google"]:hover,
+html.high-contrast button[class*="social"]:hover,
+html.high-contrast .social-button:hover {
+  background: #cccccc !important;
+  color: #000000 !important;
+}
+
+/* Loading states */
+html.high-contrast button:disabled,
+html.high-contrast [role="button"]:disabled {
+  background: #333333 !important;
+  color: #cccccc !important;
+  border: 2px solid #cccccc !important;
+  opacity: 1 !important;
+}
+
+/* Navigation buttons */
+html.high-contrast nav button,
+html.high-contrast .navigation button,
+html.high-contrast header button {
+  background: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+html.high-contrast nav button:hover,
+html.high-contrast .navigation button:hover,
+html.high-contrast header button:hover {
+  background: #cccccc !important;
   color: #000000 !important;
 }
 

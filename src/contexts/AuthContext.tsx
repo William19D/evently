@@ -1,12 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
+import { authClient, type AuthUser } from '@/lib/authClient';
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: AuthUser | null;
   isLoading: boolean;
   isMfaEnabled: boolean;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; mfaRequired?: boolean; error?: string }>;
+  signInWithGoogle: () => Promise<void>;
+  signOut: () => Promise<void>;
+  handleGoogleCallback: (code: string) => Promise<{ success: boolean; error?: string }>;
   checkMfaStatus: () => Promise<boolean>;
   enrollMfa: () => Promise<{ qrCode: string; secret: string; factorId: string } | null>;
   verifyAndEnableMfa: (code: string, factorId: string) => Promise<boolean>;
@@ -19,51 +21,125 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isMfaEnabled, setIsMfaEnabled] = useState(false);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        checkMfaStatus();
-      }
-      setIsLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    const initializeAuth = async () => {
+      setIsLoading(true);
+      
+      // Check if user has valid tokens
+      const currentUser = authClient.getCurrentUser();
+      
+      if (currentUser && authClient.getAccessToken()) {
+        // Verify token is still valid
+        const verification = await authClient.verifyToken();
         
-        if (session?.user) {
+        if (verification && verification.valid) {
+          setUser(currentUser);
+          // Check MFA status for authenticated user
           await checkMfaStatus();
         } else {
-          setIsMfaEnabled(false);
+          // Token is invalid, clear state
+          setUser(null);
         }
-        
-        setIsLoading(false);
       }
-    );
+      
+      setIsLoading(false);
+    };
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
   }, []);
 
+  const signIn = async (email: string, password: string): Promise<{ success: boolean; mfaRequired?: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await authClient.signIn(email, password);
+      
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+
+      if (response.user) {
+        setUser(response.user);
+        
+        if (response.mfaRequired) {
+          return { success: true, mfaRequired: true };
+        }
+        
+        await checkMfaStatus();
+        return { success: true };
+      }
+
+      return { success: false, error: 'Unknown error occurred' };
+    } catch (error: any) {
+      console.error('Sign in error:', error);
+      return { success: false, error: error.message || 'Login failed' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signInWithGoogle = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      await authClient.signInWithGoogle();
+      // The actual authentication will be handled in the callback page
+    } catch (error: any) {
+      setIsLoading(false);
+      throw new Error(error.message || 'Google sign in failed');
+    }
+  };
+
+  const handleGoogleCallback = async (code: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      const response = await authClient.handleGoogleCallback(code);
+      
+      if (response.error) {
+        return { success: false, error: response.error };
+      }
+
+      if (response.user) {
+        setUser(response.user);
+        await checkMfaStatus();
+        return { success: true };
+      }
+
+      return { success: false, error: 'Unknown error occurred' };
+    } catch (error: any) {
+      console.error('Google callback error:', error);
+      return { success: false, error: error.message || 'Google authentication failed' };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const signOut = async (): Promise<void> => {
+    try {
+      setIsLoading(true);
+      await authClient.signOut();
+      setUser(null);
+      setIsMfaEnabled(false);
+    } catch (error) {
+      console.error('Sign out error:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // MFA functions now use the new Edge Function
   const checkMfaStatus = async (): Promise<boolean> => {
     try {
-      const { data, error } = await supabase.auth.mfa.listFactors();
+      const result = await authClient.listMFAFactors();
       
-      if (error) {
-        console.error('Error checking MFA status:', error);
+      if (result.error) {
+        console.error('Error checking MFA status:', result.error);
         return false;
       }
 
-      const isEnabled = data?.totp?.some(factor => factor.status === 'verified') ?? false;
+      const isEnabled = result.factors?.totp?.some(factor => factor.status === 'verified') ?? false;
       setIsMfaEnabled(isEnabled);
       return isEnabled;
     } catch (error) {
@@ -74,39 +150,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const enrollMfa = async (): Promise<{ qrCode: string; secret: string; factorId: string } | null> => {
     try {
-      // First, check if there's already an unverified factor and clean it up
-      const { data: existingFactors, error: listError } = await supabase.auth.mfa.listFactors();
+      const result = await authClient.enrollMFA();
       
-      if (listError) {
-        console.error('Error listing factors:', listError);
-      } else if (existingFactors?.totp) {
-        // Remove all unverified factors to start fresh
-        const unverifiedFactors = existingFactors.totp.filter(factor => factor.status === 'unverified');
-        for (const factor of unverifiedFactors) {
-          try {
-            await supabase.auth.mfa.unenroll({ factorId: factor.id });
-            console.log('Cleaned up unverified factor:', factor.id);
-          } catch (cleanupError) {
-            console.warn('Could not clean up unverified factor:', cleanupError);
-          }
-        }
-      }
-
-      // Now enroll a new factor
-      const { data, error } = await supabase.auth.mfa.enroll({
-        factorType: 'totp',
-        friendlyName: `Evently MFA ${new Date().toISOString()}`
-      });
-
-      if (error) {
-        console.error('Error enrolling MFA:', error);
+      if (result.error || !result.factor) {
+        console.error('Error enrolling MFA:', result.error);
         return null;
       }
 
       return {
-        qrCode: data.totp.qr_code,
-        secret: data.totp.secret,
-        factorId: data.id
+        qrCode: result.factor.totp.qr_code,
+        secret: result.factor.totp.secret,
+        factorId: result.factor.id
       };
     } catch (error) {
       console.error('Error enrolling MFA:', error);
@@ -116,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyAndEnableMfa = async (code: string, factorId: string): Promise<boolean> => {
     try {
-      console.log('Starting MFA verification with:', { codeLength: code.length, code: code, factorId });
+      console.log('Starting MFA verification with:', { codeLength: code.length, code, factorId });
       
       if (code.length !== 6) {
         console.error('Invalid code length:', code.length);
@@ -124,30 +178,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // First create a challenge for the factor
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId
-      });
+      const challengeResult = await authClient.createMFAChallenge(factorId);
 
-      if (challengeError) {
-        console.error('Error creating MFA challenge:', challengeError);
+      if (challengeResult.error || !challengeResult.challenge) {
+        console.error('Error creating MFA challenge:', challengeResult.error);
         return false;
       }
 
-      console.log('Challenge created:', challengeData);
+      console.log('Challenge created:', challengeResult.challenge);
 
       // Then verify the code against the challenge
-      console.log('🔐 About to verify MFA code with challenge ID:', challengeData.id);
+      console.log('🔐 About to verify MFA code with challenge ID:', challengeResult.challenge.id);
       
-      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId: challengeData.id,
-        code
-      });
+      const verifyResult = await authClient.verifyMFA(factorId, challengeResult.challenge.id, code);
 
-      console.log('🔐 MFA verification response:', { data: verifyData, error: verifyError });
+      console.log('🔐 MFA verification response:', verifyResult);
 
-      if (verifyError) {
-        console.error('Error verifying MFA code:', verifyError);
+      if (verifyResult.error) {
+        console.error('Error verifying MFA code:', verifyResult.error);
         return false;
       }
 
@@ -171,46 +219,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      const { data: verifyData, error: verifyError } = await supabase.auth.mfa.verify({
-        factorId,
-        challengeId,
-        code
-      });
+      const verifyResult = await authClient.verifyMFA(factorId, challengeId, code);
 
-      console.log('🔒 MFA login verification response:', { data: verifyData, error: verifyError });
+      console.log('🔒 MFA login verification response:', verifyResult);
 
-      if (verifyError) {
-        console.error('Error verifying MFA login code:', verifyError);
+      if (verifyResult.error) {
+        console.error('Error verifying MFA login code:', verifyResult.error);
         return false;
       }
 
-      if (verifyData) {
-        console.log('🔒 MFA login verification successful, checking session...');
+      if (verifyResult.accessToken && verifyResult.user) {
+        console.log('🔒 MFA login verification successful');
         
-        // Wait a moment for session to be established
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Update user state with the new token that has aal2
+        setUser({
+          id: verifyResult.user.id,
+          email: user?.email || '',
+          role: verifyResult.user.role
+        });
         
-        // Check if we now have a session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (sessionError) {
-          console.error('Error getting session after MFA verification:', sessionError);
-          return false;
-        }
-        
-        if (session) {
-          console.log('🔒 Session established successfully after MFA');
-          // Update the auth context state
-          setSession(session);
-          setUser(session.user);
-          return true;
-        } else {
-          console.error('🔒 No session found after MFA verification');
-          return false;
-        }
+        return true;
       }
 
-      console.log('🔒 No verification data returned');
+      console.log('🔒 No access token returned');
       return false;
     } catch (error) {
       console.error('Error verifying MFA login:', error);
@@ -220,9 +251,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyMfaChallenge = async (code: string, factorId: string): Promise<boolean> => {
     try {
-      // This function is handled differently - the verification is done
-      // in the TwoFactorAuth component using the challengeId
-      return true;
+      // This function creates a challenge and then verifies it
+      const challengeResult = await authClient.createMFAChallenge(factorId);
+      
+      if (challengeResult.error || !challengeResult.challenge) {
+        return false;
+      }
+
+      const verifyResult = await authClient.verifyMFA(factorId, challengeResult.challenge.id, code);
+      return !verifyResult.error;
     } catch (error) {
       console.error('Error verifying MFA challenge:', error);
       return false;
@@ -235,14 +272,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // If no factorId provided, get the first verified factor
       if (!targetFactorId) {
-        const { data: factorsData, error: listError } = await supabase.auth.mfa.listFactors();
+        const factorsResult = await authClient.listMFAFactors();
         
-        if (listError) {
-          console.error('Error listing factors for unenroll:', listError);
+        if (factorsResult.error) {
+          console.error('Error listing factors for unenroll:', factorsResult.error);
           return false;
         }
 
-        const verifiedFactor = factorsData?.totp?.find(factor => factor.status === 'verified');
+        const verifiedFactor = factorsResult.factors?.totp.find(factor => factor.status === 'verified');
         if (!verifiedFactor) {
           console.error('No verified MFA factor found');
           return false;
@@ -251,12 +288,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         targetFactorId = verifiedFactor.id;
       }
 
-      const { error } = await supabase.auth.mfa.unenroll({
-        factorId: targetFactorId
-      });
+      const result = await authClient.unenrollMFA(targetFactorId);
 
-      if (error) {
-        console.error('Error unenrolling MFA:', error);
+      if (result.error) {
+        console.error('Error unenrolling MFA:', result.error);
         return false;
       }
 
@@ -272,72 +307,60 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       console.log('🔐 Starting sign in process...');
       
-      // Try to sign in with email and password
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      console.log('🔐 Sign in response:', { data, error });
-
-      if (error) {
-        return { requiresMfa: false, error: error.message };
+      const result = await authClient.signIn(email, password);
+      
+      if (result.error) {
+        console.error('🔐 Sign in error:', result.error);
+        return { requiresMfa: false, error: result.error };
       }
 
-      // Check if the user has MFA enabled and it's enforced
-      if (data.user && !data.session) {
-        console.log('🔐 No session - user has MFA enabled and must verify');
+      // Check if MFA is required
+      if (result.mfaRequired) {
+        console.log('🔐 MFA required for user');
         
-        // Get MFA factors for this user
-        const { data: factorsData, error: factorsError } = await supabase.auth.mfa.listFactors();
+        // Get available MFA factors
+        const factorsResult = await authClient.listMFAFactors();
         
-        console.log('🔐 Factors data:', { factorsData, factorsError });
-        
-        if (!factorsError && factorsData?.totp?.length > 0) {
-          const verifiedFactor = factorsData.totp.find(factor => factor.status === 'verified');
-          
-          if (verifiedFactor) {
-            console.log('🔐 Found verified TOTP factor, creating challenge');
-            
-            const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-              factorId: verifiedFactor.id
-            });
-
-            if (challengeError) {
-              console.error('🔐 Challenge error:', challengeError);
-              return { requiresMfa: false, error: "Error creating MFA challenge" };
-            }
-
-            return {
-              requiresMfa: true,
-              mfaData: {
-                factorId: verifiedFactor.id,
-                challengeId: challengeData.id,
-                email: email
-              }
-            };
-          }
+        if (factorsResult.error) {
+          console.error('🔐 Error listing MFA factors:', factorsResult.error);
+          return { requiresMfa: false, error: 'Failed to get MFA factors' };
         }
+
+        return { 
+          requiresMfa: true, 
+          mfaData: {
+            factors: factorsResult.factors,
+            user: result.user
+          }
+        };
       }
 
-      // If we haveg both user and session, login is complete
-      if (data.user && data.session) {
-        console.log('🔐 Login complete with session');
+      // If no MFA required and we have access token, user is signed in
+      if (result.accessToken && result.user) {
+        console.log('🔐 Sign in successful without MFA');
+        setUser({
+          id: result.user.id,
+          email: result.user.email || email,
+          role: result.user.role
+        });
         return { requiresMfa: false };
       }
 
-      return { requiresMfa: false, error: "Login failed" };
-    } catch (error) {
+      return { requiresMfa: false, error: 'Unknown error occurred' };
+    } catch (error: any) {
       console.error('🔐 Error in signInWithMfa:', error);
-      return { requiresMfa: false, error: "Connection error" };
+      return { requiresMfa: false, error: error.message || "Connection error" };
     }
   };
 
   const value: AuthContextType = {
     user,
-    session,
     isLoading,
     isMfaEnabled,
+    signIn,
+    signInWithGoogle,
+    signOut,
+    handleGoogleCallback,
     checkMfaStatus,
     enrollMfa,
     verifyAndEnableMfa,
