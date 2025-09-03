@@ -3,6 +3,7 @@ const AUTH_FUNCTION_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1
 
 // Import debugging utilities
 import { logAuthStep, logAuthError, checkEnvVars } from './authDebug';
+import { getCallbackUrl, logEnvironmentInfo } from './environmentUtils';
 
 export interface AuthUser {
   id: string;
@@ -234,21 +235,39 @@ class AuthClient {
 
   async signInWithGoogle(): Promise<{ data?: any; error?: string }> {
     try {
+      // Log environment information for debugging
+      const envInfo = logEnvironmentInfo();
+      
+      logAuthStep('GOOGLE_SIGNIN_START', {
+        callbackUrl: envInfo.callbackUrl,
+        environment: envInfo.isProduction ? 'production' : 'development'
+      });
+
       const result = await this.makeRequest({
-        action: 'google-signin'
+        action: 'google-signin',
+        redirectUrl: envInfo.callbackUrl  // Pass the dynamic callback URL
       }, false);
 
+      logAuthStep('GOOGLE_SIGNIN_RESPONSE', {
+        hasUrl: !!(result.data?.url || result.redirectUrl),
+        resultKeys: Object.keys(result || {})
+      });
+
       if (result.data && result.data.url) {
+        logAuthStep('REDIRECTING_TO_GOOGLE', { url: result.data.url });
         // Redirect to Google OAuth
         window.location.href = result.data.url;
         return { data: result.data };
       } else if (result.redirectUrl) {
+        logAuthStep('REDIRECTING_TO_GOOGLE_ALT', { url: result.redirectUrl });
         window.location.href = result.redirectUrl;
         return { data: { url: result.redirectUrl } };
       } else {
+        logAuthError('NO_OAUTH_URL', result);
         return { error: 'No OAuth URL received' };
       }
     } catch (error) {
+      logAuthError('GOOGLE_SIGNIN_EXCEPTION', error);
       return { error: (error as Error).message };
     }
   }
