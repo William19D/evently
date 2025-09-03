@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authClient, type AuthUser } from '@/lib/authClient';
+import { logAuthStep, logAuthError } from '@/lib/authDebug';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -94,23 +95,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const handleGoogleCallback = async (code: string): Promise<{ success: boolean; error?: string }> => {
     try {
+      logAuthStep('CONTEXT_GOOGLE_CALLBACK_START', { codeLength: code.length });
       setIsLoading(true);
+      
       const response = await authClient.handleGoogleCallback(code);
       
+      logAuthStep('CONTEXT_CALLBACK_RESPONSE', {
+        hasError: !!response.error,
+        hasUser: !!response.user,
+        error: response.error,
+        userEmail: response.user?.email,
+        userRole: response.user?.role
+      });
+      
       if (response.error) {
+        logAuthError('CONTEXT_CALLBACK_ERROR', response.error);
         return { success: false, error: response.error };
       }
 
       if (response.user) {
+        logAuthStep('CONTEXT_SETTING_USER', {
+          userEmail: response.user.email,
+          userRole: response.user.role,
+          userId: response.user.id
+        });
         setUser(response.user);
         await checkMfaStatus();
         return { success: true };
       }
 
-      return { success: false, error: 'Unknown error occurred' };
+      logAuthStep('CONTEXT_NO_USER_WARNING', 'No user in response');
+      return { success: false, error: 'No se recibió información del usuario' };
     } catch (error: any) {
-      console.error('Google callback error:', error);
-      return { success: false, error: error.message || 'Google authentication failed' };
+      logAuthError('CONTEXT_GOOGLE_CALLBACK_EXCEPTION', error);
+      return { success: false, error: error.message || 'Error de autenticación con Google' };
     } finally {
       setIsLoading(false);
     }

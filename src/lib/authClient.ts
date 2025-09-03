@@ -1,6 +1,9 @@
 // Edge Function URL
 const AUTH_FUNCTION_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/auth';
 
+// Import debugging utilities
+import { logAuthStep, logAuthError, checkEnvVars } from './authDebug';
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -125,6 +128,16 @@ class AuthClient {
   }
 
   private async makeRequest(body: any, requireAuth: boolean = true): Promise<any> {
+    // Check environment variables first
+    checkEnvVars();
+    
+    logAuthStep('REQUEST_START', {
+      action: body.action,
+      requireAuth,
+      hasAccessToken: !!this.accessToken,
+      url: AUTH_FUNCTION_URL
+    });
+
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
       'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
@@ -132,24 +145,51 @@ class AuthClient {
 
     if (requireAuth && this.accessToken) {
       headers['Authorization'] = `Bearer ${this.accessToken}`;
+      logAuthStep('AUTH_HEADER_ADDED', { tokenLength: this.accessToken.length });
     }
 
-    console.log('🌐 Making request to:', AUTH_FUNCTION_URL);
-    console.log('📦 Request body:', body);
-    console.log('🔑 Require auth:', requireAuth);
+    try {
+      const response = await fetch(AUTH_FUNCTION_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
 
-    const response = await fetch(AUTH_FUNCTION_URL, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
+      logAuthStep('RESPONSE_RECEIVED', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-      throw new Error(errorData.error || `HTTP ${response.status}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        logAuthError('REQUEST_FAILED', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        } catch (parseError) {
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+      }
+
+      const result = await response.json();
+      logAuthStep('REQUEST_SUCCESS', {
+        action: body.action,
+        hasResult: !!result,
+        resultKeys: Object.keys(result || {})
+      });
+      
+      return result;
+    } catch (error) {
+      logAuthError('REQUEST_EXCEPTION', error);
+      throw error;
     }
-
-    return response.json();
   }
 
   // Authentication methods
@@ -215,17 +255,37 @@ class AuthClient {
 
   async handleGoogleCallback(code: string): Promise<AuthResponse> {
     try {
+      logAuthStep('GOOGLE_CALLBACK_START', {
+        codeLength: code.length,
+        codePreview: code.substring(0, 20) + '...'
+      });
+      
       const result = await this.makeRequest({
         action: 'google-callback',
         code
       }, false);
 
+      logAuthStep('GOOGLE_CALLBACK_RESPONSE', {
+        success: result.success,
+        hasUser: !!result.user,
+        hasTokens: !!(result.accessToken && result.refreshToken),
+        error: result.error,
+        userEmail: result.user?.email,
+        userRole: result.user?.role
+      });
+
       if (result.accessToken && result.refreshToken && result.user) {
+        logAuthStep('SAVING_TOKENS', {
+          userEmail: result.user.email,
+          userRole: result.user.role,
+          userId: result.user.id
+        });
         this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
       }
 
       return result;
     } catch (error) {
+      logAuthError('GOOGLE_CALLBACK_EXCEPTION', error);
       return { error: (error as Error).message };
     }
   }

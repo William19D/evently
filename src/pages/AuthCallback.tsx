@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { logAuthStep, logAuthError } from '@/lib/authDebug';
 import { Loader2 } from 'lucide-react';
 
 const AuthCallback = () => {
@@ -26,9 +27,30 @@ const AuthCallback = () => {
         const hashError = hashParams.get('error');
         const hashErrorDescription = hashParams.get('error_description');
 
+        logAuthStep('CALLBACK_URL_ANALYSIS', {
+          urlParams: {
+            hasCode: !!code,
+            codeLength: code?.length,
+            hasError: !!error,
+            error,
+            errorDescription
+          },
+          hashParams: {
+            hasAccessToken: !!accessToken,
+            accessTokenLength: accessToken?.length,
+            hasHashError: !!hashError,
+            hashError,
+            hashErrorDescription
+          },
+          fullUrl: window.location.href
+        });
+
         // Check for errors first
         if (error || hashError) {
-          console.error('Auth error:', error || hashError, errorDescription || hashErrorDescription);
+          logAuthError('CALLBACK_ERROR_DETECTED', {
+            error: error || hashError,
+            description: errorDescription || hashErrorDescription
+          });
           setError(errorDescription || hashErrorDescription || 'Error en la autenticación');
           setIsProcessing(false);
           setTimeout(() => navigate('/login-selection'), 3000);
@@ -37,12 +59,12 @@ const AuthCallback = () => {
 
         // Handle authorization code flow (preferred)
         if (code) {
-          console.log('Processing OAuth callback with authorization code...');
+          logAuthStep('PROCESSING_OAUTH_CODE', { codeLength: code.length });
           
           const result = await handleGoogleCallback(code);
 
           if (result.success) {
-            console.log('Google authentication successful');
+            console.log('✅ Google authentication successful');
             
             // Clean the URL by replacing the current history entry
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -53,7 +75,7 @@ const AuthCallback = () => {
             // Navigate to the main page
             navigate('/', { replace: true });
           } else {
-            console.error('Google authentication failed:', result.error);
+            console.error('❌ Google authentication failed:', result.error);
             setError(result.error || 'Error al procesar la autenticación con Google');
             setIsProcessing(false);
             setTimeout(() => navigate('/login-selection'), 3000);
@@ -61,12 +83,12 @@ const AuthCallback = () => {
         }
         // Handle legacy implicit flow (fallback)
         else if (accessToken) {
-          console.log('Processing OAuth callback with access token (legacy flow)...');
+          console.log('🔄 Processing OAuth callback with access token (legacy flow)...');
           
           const result = await handleGoogleCallback(accessToken);
 
           if (result.success) {
-            console.log('Google authentication successful');
+            console.log('✅ Google authentication successful');
             
             // Clean the URL by replacing the current history entry
             window.history.replaceState({}, document.title, window.location.pathname);
@@ -77,17 +99,19 @@ const AuthCallback = () => {
             // Navigate to the main page
             navigate('/', { replace: true });
           } else {
-            console.error('Google authentication failed:', result.error);
+            console.error('❌ Google authentication failed:', result.error);
             setError(result.error || 'Error al procesar la autenticación con Google');
             setIsProcessing(false);
             setTimeout(() => navigate('/login-selection'), 3000);
           }
         } else {
-          console.log('No authorization code or access token found, redirecting to login...');
-          navigate('/login-selection', { replace: true });
+          console.log('⚠️ No authorization code or access token found, redirecting to login...');
+          setError('No se recibió código de autorización de Google');
+          setIsProcessing(false);
+          setTimeout(() => navigate('/login-selection'), 3000);
         }
       } catch (error) {
-        console.error('Unexpected error in auth callback:', error);
+        console.error('💥 Unexpected error in auth callback:', error);
         setError('Error inesperado en la autenticación');
         setIsProcessing(false);
         setTimeout(() => navigate('/login-selection'), 3000);
