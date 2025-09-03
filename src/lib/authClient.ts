@@ -60,6 +60,11 @@ class AuthClient {
       headers.Authorization = `Bearer ${this.accessToken}`;
     }
 
+    // Add origin header for OAuth redirects
+    if (typeof window !== 'undefined') {
+      headers.Origin = window.location.origin;
+    }
+
     console.log('🌐 Making request to:', AUTH_FUNCTION_URL);
     console.log('📦 Request body:', body);
     console.log('🔑 Require auth:', requireAuth);
@@ -125,34 +130,19 @@ class AuthClient {
 
   async signInWithGoogle(): Promise<{ data?: any; error?: string }> {
     try {
-      // For now, let's directly use Supabase's OAuth URL generation
-      // Since the Edge Function approach isn't working properly
-      
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabaseUrl = 'https://xchgmvpzygpenccnidtq.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaGdtdnB6eWdwZW5jY25pZHRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU5OTE1NjEsImV4cCI6MjA0MTU2NzU2MX0.6gcG7fFqX2Gf6bLM1JtUHBYv6n6qI5-qFAD7VQxY9F4';
-      
-      const supabase = createClient(supabaseUrl, supabaseKey);
-      
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent'
-          }
-        }
-      });
+      const result = await this.makeRequest({
+        action: 'google-signin'
+      }, false); // Don't require auth for Google sign in
 
-      if (error) {
-        console.error('Google OAuth error:', error);
-        return { error: error.message };
+      // The Edge Function returns { data: { url: "..." } }
+      if (result.data && result.data.url) {
+        // Redirect to Google OAuth
+        window.location.href = result.data.url;
+        return { data: result.data };
+      } else {
+        return { error: 'No OAuth URL received' };
       }
-
-      return { data };
     } catch (error) {
-      console.error('Google sign in error:', error);
       return { error: (error as Error).message };
     }
   }
