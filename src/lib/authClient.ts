@@ -50,22 +50,39 @@ class AuthClient {
     }
   }
 
-  private async makeRequest(body: any): Promise<any> {
+  private async makeRequest(body: any, requireAuth: boolean = true): Promise<any> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+
+    // Only add Authorization header if auth is required and we have a token
+    if (requireAuth && this.accessToken) {
+      headers.Authorization = `Bearer ${this.accessToken}`;
+    }
+
+    console.log('🌐 Making request to:', AUTH_FUNCTION_URL);
+    console.log('📦 Request body:', body);
+    console.log('🔑 Require auth:', requireAuth);
+    console.log('📋 Headers:', headers);
+
     const response = await fetch(AUTH_FUNCTION_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(this.accessToken && { Authorization: `Bearer ${this.accessToken}` })
-      },
+      headers,
       body: JSON.stringify(body)
     });
 
+    console.log('📡 Response status:', response.status);
+    console.log('📡 Response ok:', response.ok);
+
     if (!response.ok) {
       const error = await response.json();
+      console.error('❌ Error response:', error);
       throw new Error(error.error || 'Network error');
     }
 
-    return response.json();
+    const result = await response.json();
+    console.log('✅ Success response:', result);
+    return result;
   }
 
   private setTokens(accessToken: string, refreshToken: string) {
@@ -94,7 +111,7 @@ class AuthClient {
         action: 'signin',
         email,
         password
-      });
+      }, false); // Don't require auth for sign in
 
       if (result.accessToken && result.refreshToken) {
         this.setTokens(result.accessToken, result.refreshToken);
@@ -108,13 +125,34 @@ class AuthClient {
 
   async signInWithGoogle(): Promise<{ data?: any; error?: string }> {
     try {
-      const result = await this.makeRequest({
-        action: 'google-signin'
+      // For now, let's directly use Supabase's OAuth URL generation
+      // Since the Edge Function approach isn't working properly
+      
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabaseUrl = 'https://xchgmvpzygpenccnidtq.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjaGdtdnB6eWdwZW5jY25pZHRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjU5OTE1NjEsImV4cCI6MjA0MTU2NzU2MX0.6gcG7fFqX2Gf6bLM1JtUHBYv6n6qI5-qFAD7VQxY9F4';
+      
+      const supabase = createClient(supabaseUrl, supabaseKey);
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent'
+          }
+        }
       });
 
-      // This will return the OAuth URL
-      return { data: result.data };
+      if (error) {
+        console.error('Google OAuth error:', error);
+        return { error: error.message };
+      }
+
+      return { data };
     } catch (error) {
+      console.error('Google sign in error:', error);
       return { error: (error as Error).message };
     }
   }
@@ -124,7 +162,7 @@ class AuthClient {
       const result = await this.makeRequest({
         action: 'google-callback',
         code
-      });
+      }, false); // Don't require auth for callback
 
       if (result.accessToken && result.refreshToken) {
         this.setTokens(result.accessToken, result.refreshToken);

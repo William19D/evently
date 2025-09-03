@@ -12,26 +12,57 @@ const AuthCallback = () => {
   useEffect(() => {
     const processCallback = async () => {
       try {
-        // Get the current URL fragment
+        // Get URL parameters (both query params and hash params)
+        const urlParams = new URLSearchParams(window.location.search);
         const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        
+        // Check for authorization code (OAuth code flow)
+        const code = urlParams.get('code');
+        const error = urlParams.get('error');
+        const errorDescription = urlParams.get('error_description');
+        
+        // Also check hash params as fallback
         const accessToken = hashParams.get('access_token');
-        const errorParam = hashParams.get('error');
-        const errorDescription = hashParams.get('error_description');
+        const hashError = hashParams.get('error');
+        const hashErrorDescription = hashParams.get('error_description');
 
         // Check for errors first
-        if (errorParam) {
-          console.error('Auth error:', errorParam, errorDescription);
-          setError(errorDescription || 'Error en la autenticación');
+        if (error || hashError) {
+          console.error('Auth error:', error || hashError, errorDescription || hashErrorDescription);
+          setError(errorDescription || hashErrorDescription || 'Error en la autenticación');
           setIsProcessing(false);
           setTimeout(() => navigate('/login-selection'), 3000);
           return;
         }
 
-        // If we have an access token, this is the Supabase session token
-        if (accessToken) {
-          console.log('Processing OAuth callback with Supabase token...');
+        // Handle authorization code flow (preferred)
+        if (code) {
+          console.log('Processing OAuth callback with authorization code...');
           
-          // Use the custom auth handler for Google callback
+          const result = await handleGoogleCallback(code);
+
+          if (result.success) {
+            console.log('Google authentication successful');
+            
+            // Clean the URL by replacing the current history entry
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            // Wait a moment for the auth context to update
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            // Navigate to the main page
+            navigate('/', { replace: true });
+          } else {
+            console.error('Google authentication failed:', result.error);
+            setError(result.error || 'Error al procesar la autenticación con Google');
+            setIsProcessing(false);
+            setTimeout(() => navigate('/login-selection'), 3000);
+          }
+        }
+        // Handle legacy implicit flow (fallback)
+        else if (accessToken) {
+          console.log('Processing OAuth callback with access token (legacy flow)...');
+          
           const result = await handleGoogleCallback(accessToken);
 
           if (result.success) {
@@ -52,7 +83,7 @@ const AuthCallback = () => {
             setTimeout(() => navigate('/login-selection'), 3000);
           }
         } else {
-          console.log('No access token found, redirecting to login...');
+          console.log('No authorization code or access token found, redirecting to login...');
           navigate('/login-selection', { replace: true });
         }
       } catch (error) {
