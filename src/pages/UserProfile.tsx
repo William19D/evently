@@ -10,7 +10,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Mail, Phone, MapPin, Calendar, Shield, LogOut, ArrowLeft, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import MfaSettings from "@/components/MfaSettings";
 
 const UserProfile = () => {
@@ -18,7 +17,7 @@ const UserProfile = () => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, session } = useAuth();
+  const { user, signOut } = useAuth();
 
   useEffect(() => {
     if (!user) {
@@ -29,11 +28,11 @@ const UserProfile = () => {
     // Load user profile data
     setUserProfile({
       email: user.email,
-      firstName: user.user_metadata?.first_name || '',
-      lastName: user.user_metadata?.last_name || '',
-      phone: user.user_metadata?.phone || '',
-      avatar: user.user_metadata?.avatar_url || '',
-      createdAt: user.created_at,
+      firstName: user.name?.split(' ')[0] || '',
+      lastName: user.name?.split(' ').slice(1).join(' ') || '',
+      phone: '',
+      avatar: '',
+      createdAt: new Date(),
     });
   }, [user, navigate]);
 
@@ -41,25 +40,17 @@ const UserProfile = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signOut();
+      await signOut();
       
-      if (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo cerrar sesión. Inténtalo de nuevo.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Sesión cerrada",
-          description: "Has cerrado sesión correctamente.",
-        });
-        navigate("/");
-      }
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      navigate("/");
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error de conexión. Inténtalo de nuevo.",
+        description: "No se pudo cerrar sesión. Inténtalo de nuevo.",
         variant: "destructive"
       });
     } finally {

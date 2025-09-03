@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, Building2, MapPin } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { authClient } from "@/lib/authClient";
 import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerRegister = () => {
@@ -105,16 +106,43 @@ const OwnerRegister = () => {
 
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: "¡Cuenta de propietario creada!",
-        description: "Tu cuenta está en revisión. Te contactaremos pronto.",
+    try {
+      const result = await authClient.register({
+        email: formData.email,
+        password: formData.password,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: 'owner'
       });
-      setTimeout(() => {
-        navigate("/login/owner");
-      }, 1000);
-    }, 1500);
+
+      if (result.error) {
+        if (result.error.includes('User already registered') || result.error.includes('already')) {
+          setErrors({
+            email: "Este email ya está registrado. Intenta iniciar sesión."
+          });
+        } else {
+          setErrors({
+            general: result.error
+          });
+        }
+      } else if (result.success && result.user) {
+        toast({
+          title: "¡Cuenta de propietario creada!",
+          description: "Tu cuenta ha sido creada exitosamente.",
+        });
+        navigate("/dashboard");
+      } else {
+        setErrors({
+          general: "Error al crear la cuenta. Inténtalo de nuevo."
+        });
+      }
+    } catch (error: any) {
+      setErrors({
+        general: error.message || "Error de conexión. Inténtalo de nuevo."
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

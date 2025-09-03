@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerLogin = () => {
@@ -17,6 +18,7 @@ const OwnerLogin = () => {
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { signInWithMfa } = useAuth();
 
   const validateForm = () => {
     const newErrors: {email?: string, password?: string} = {};
@@ -47,20 +49,36 @@ const OwnerLogin = () => {
     
     setIsLoading(true);
     
-    setTimeout(() => {
-      setIsLoading(false);
-      if (email === "propietario@evently.com" && password === "12345678") {
+    try {
+      const result = await signInWithMfa(email, password);
+      
+      if (result.error) {
+        setErrors({
+          general: result.error.includes('Invalid') ? "Credenciales incorrectas. Verifica tu email y contraseña." : result.error
+        });
+      } else if (result.requiresMfa && result.mfaData) {
+        // Usuario con MFA habilitado - pedir código de verificación
+        navigate("/two-factor-auth", {
+          state: {
+            mfaData: result.mfaData
+          }
+        });
+      } else {
+        // Login exitoso
         toast({
           title: "¡Bienvenido Propietario!",
           description: "Has iniciado sesión correctamente.",
         });
-        navigate("/dashboard"); // Redirect to owner dashboard
-      } else {
-        setErrors({
-          general: "Credenciales incorrectas. Usa propietario@evently.com / 12345678 para probar."
-        });
+        navigate("/dashboard");
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrors({
+        general: "Error de conexión. Inténtalo de nuevo."
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

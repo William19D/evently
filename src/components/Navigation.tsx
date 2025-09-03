@@ -4,46 +4,36 @@ import { Search, User, Menu, Calendar, MapPin, ChevronDown, Building2, LogOut, S
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Logo";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isMfaEnabled } = useAuth();
+  const { user, isMfaEnabled, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
+      await signOut();
       
-      if (error) {
-        toast({
-          title: "Error",
-          description: "No se pudo cerrar sesión. Inténtalo de nuevo.",
-          variant: "destructive"
-        });
-      } else {
-        toast({
-          title: "Sesión cerrada",
-          description: "Has cerrado sesión correctamente.",
-        });
-        // Redirect to home page after successful logout
-        navigate("/");
-      }
+      toast({
+        title: "Sesión cerrada",
+        description: "Has cerrado sesión correctamente.",
+      });
+      navigate("/");
     } catch (error) {
       toast({
         title: "Error",
-        description: "Error de conexión. Inténtalo de nuevo.",
+        description: "No se pudo cerrar sesión. Inténtalo de nuevo.",
         variant: "destructive"
       });
     }
   };
 
   const getUserDisplayName = () => {
-    if (user?.user_metadata?.first_name) {
-      return `${user.user_metadata.first_name} ${user.user_metadata.last_name || ''}`.trim();
+    if (user?.name) {
+      return user.name;
     }
     return user?.email?.split('@')[0] || 'Usuario';
   };
@@ -54,167 +44,223 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/">
-              <Logo size="md" />
+            <Link to="/" className="flex items-center space-x-2">
+              <Logo />
             </Link>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link to="/about" className="text-foreground hover:text-primary transition-colors font-medium">
-              Quién Somos
+            <Link 
+              to="/search" 
+              className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-1"
+            >
+              <Search className="w-4 h-4" />
+              <span>Buscar</span>
             </Link>
-            <Link to="/contact" className="text-foreground hover:text-primary transition-colors font-medium">
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="text-muted-foreground hover:text-foreground transition-colors">
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Categorías
+                  <ChevronDown className="w-4 h-4 ml-1" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem asChild>
+                  <Link to="/search?category=conferences">Conferencias</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/search?category=weddings">Bodas</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/search?category=corporate">Corporativo</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link to="/search?category=social">Social</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Link 
+              to="/about" 
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Nosotros
+            </Link>
+
+            <Link 
+              to="/contact" 
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
               Contacto
             </Link>
-            <Link to="/faq" className="text-foreground hover:text-primary transition-colors font-medium">
-              Preguntas Frecuentes
-            </Link>
           </div>
 
-          {/* Desktop Actions */}
-          <div className="hidden md:flex items-center space-x-4">
+          {/* Auth Section */}
+          <div className="flex items-center space-x-4">
             {user ? (
-              /* Authenticated User Menu */
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    {getUserDisplayName()}
-                    {isMfaEnabled && <Shield className="w-3 h-3 text-green-600" />}
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-card border-border shadow-lg" align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile" className="flex items-center gap-3">
-                      <Settings className="w-4 h-4 text-primary" />
-                      <div>
-                        <div className="font-medium">Mi Perfil</div>
-                        <div className="text-xs text-muted-foreground">Configuración y seguridad</div>
+              <>
+                {/* User Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 text-muted-foreground hover:text-foreground">
+                      <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center">
+                        <User className="w-4 h-4" />
                       </div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <div className="h-px bg-border my-1" />
-                  <DropdownMenuItem onClick={handleSignOut} className="flex items-center gap-3 text-destructive focus:text-destructive">
-                    <LogOut className="w-4 h-4" />
-                    <div className="font-medium">Cerrar Sesión</div>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              /* Guest Login Menu */
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    Iniciar Sesión
-                    <ChevronDown className="w-3 h-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56 bg-card border-border shadow-lg" align="end">
-                  <DropdownMenuItem asChild>
-                    <Link to="/login/client" className="flex items-center gap-3">
-                      <User className="w-4 h-4 text-primary" />
-                      <div>
-                        <div className="font-medium">Soy Cliente</div>
-                        <div className="text-xs text-muted-foreground">Busco espacios para eventos</div>
-                      </div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link to="/login/owner" className="flex items-center gap-3">
-                      <Building2 className="w-4 h-4 text-primary" />
-                      <div>
-                        <div className="font-medium">Soy Propietario</div>
-                        <div className="text-xs text-muted-foreground">Tengo espacios para alquilar</div>
-                      </div>
-                    </Link>
-                  </DropdownMenuItem>
-                  <div className="h-px bg-border my-1" />
-                  <DropdownMenuItem asChild>
-                    <Link to="/register-selection" className="flex items-center gap-3 text-muted-foreground">
-                      <div className="w-4 h-4" />
-                      <div className="text-sm">¿No tienes cuenta? Regístrate</div>
-                    </Link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-          </div>
+                      <span className="hidden sm:block">{getUserDisplayName()}</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile" className="flex items-center">
+                        <User className="w-4 h-4 mr-2" />
+                        Perfil
+                      </Link>
+                    </DropdownMenuItem>
+                    
+                    {user.role === 'owner' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/dashboard" className="flex items-center">
+                          <Building2 className="w-4 h-4 mr-2" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
 
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
+                    <DropdownMenuItem asChild>
+                      <Link to="/mfa-setup" className="flex items-center">
+                        <Shield className="w-4 h-4 mr-2" />
+                        <span>MFA {isMfaEnabled ? '(Activo)' : '(Inactivo)'}</span>
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem asChild>
+                      <Link to="/settings" className="flex items-center">
+                        <Settings className="w-4 h-4 mr-2" />
+                        Configuración
+                      </Link>
+                    </DropdownMenuItem>
+
+                    <DropdownMenuItem onClick={handleSignOut} className="flex items-center text-destructive focus:text-destructive">
+                      <LogOut className="w-4 h-4 mr-2" />
+                      Cerrar Sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Link to="/login-selection">
+                  <Button variant="ghost" size="sm">
+                    Iniciar Sesión
+                  </Button>
+                </Link>
+                <Link to="/register-selection">
+                  <Button size="sm">
+                    Registrarse
+                  </Button>
+                </Link>
+              </>
+            )}
+
+            {/* Mobile Menu Button */}
+            <div className="md:hidden">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                aria-label="Abrir menú"
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border">
-            <div className="flex flex-col space-y-3">
-              <Link to="/about" className="text-foreground hover:text-primary transition-colors py-2">
-                Quién Somos
+          <div className="md:hidden">
+            <div className="px-2 pt-2 pb-3 space-y-1 border-t border-border">
+              <Link
+                to="/search"
+                className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Search className="w-4 h-4 inline mr-2" />
+                Buscar Espacios
               </Link>
-              <Link to="/contact" className="text-foreground hover:text-primary transition-colors py-2">
+              
+              <div className="px-3 py-2">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Categorías</p>
+                <div className="space-y-1 ml-4">
+                  <Link
+                    to="/search?category=conferences"
+                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Conferencias
+                  </Link>
+                  <Link
+                    to="/search?category=weddings"
+                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Bodas
+                  </Link>
+                  <Link
+                    to="/search?category=corporate"
+                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Corporativo
+                  </Link>
+                  <Link
+                    to="/search?category=social"
+                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Social
+                  </Link>
+                </div>
+              </div>
+
+              <Link
+                to="/about"
+                className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                Nosotros
+              </Link>
+
+              <Link
+                to="/contact"
+                className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 Contacto
               </Link>
-              <Link to="/faq" className="text-foreground hover:text-primary transition-colors py-2">
-                Preguntas Frecuentes
-              </Link>
-              <div className="pt-4 border-t border-border">
-                {user ? (
-                  /* Mobile Authenticated Menu */
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium text-muted-foreground px-2 flex items-center gap-2">
-                      Hola, {getUserDisplayName()}
-                      {isMfaEnabled && <Shield className="w-3 h-3 text-green-600" />}
-                    </div>
-                    <Link to="/profile">
-                      <Button variant="outline" className="w-full justify-start">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Mi Perfil
-                      </Button>
-                    </Link>
-                    <Button 
-                      variant="ghost" 
-                      className="w-full justify-start text-destructive"
-                      onClick={handleSignOut}
-                    >
-                      <LogOut className="w-4 h-4 mr-2" />
-                      Cerrar Sesión
-                    </Button>
-                  </div>
-                ) : (
-                  /* Mobile Login Options */
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium text-muted-foreground px-2">Iniciar Sesión</div>
-                    <Link to="/login/client">
-                      <Button variant="outline" className="w-full justify-start">
-                        <User className="w-4 h-4 mr-2" />
-                        Soy Cliente
-                      </Button>
-                    </Link>
-                    <Link to="/login/owner">
-                      <Button variant="outline" className="w-full justify-start">
-                        <Building2 className="w-4 h-4 mr-2" />
-                        Soy Propietario
-                      </Button>
-                    </Link>
-                    <Link to="/register-selection" className="block">
-                      <Button variant="ghost" className="w-full justify-start text-muted-foreground text-sm">
-                        ¿No tienes cuenta? Regístrate
-                      </Button>
-                    </Link>
-                  </div>
-                )}
-              </div>
+
+              {!user && (
+                <>
+                  <Link
+                    to="/login-selection"
+                    className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Iniciar Sesión
+                  </Link>
+                  <Link
+                    to="/register-selection"
+                    className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    Registrarse
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         )}

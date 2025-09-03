@@ -9,7 +9,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Chrome, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { authClient } from "@/lib/authClient";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientRegister = () => {
@@ -28,28 +29,14 @@ const ClientRegister = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { user, signInWithGoogle } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate("/");
-      }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        toast({
-          title: "¡Bienvenido!",
-          description: "Te has registrado correctamente con Google.",
-        });
-        navigate("/");
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate, toast]);
+    if (user) {
+      navigate("/");
+    }
+  }, [user, navigate]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -104,24 +91,12 @@ const ClientRegister = () => {
   const handleGoogleSignUp = async () => {
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) {
-        toast({
-          title: "Error de autenticación",
-          description: error.message,
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
+      await signInWithGoogle();
+      // The actual authentication will be handled in the callback page
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "No se pudo conectar con Google. Inténtalo de nuevo.",
+        description: error.message || "No se pudo conectar con Google. Inténtalo de nuevo.",
         variant: "destructive"
       });
     } finally {
@@ -140,39 +115,38 @@ const ClientRegister = () => {
     setIsLoading(true);
     
     try {
-      const { error } = await supabase.auth.signUp({
+      const result = await authClient.register({
         email: formData.email,
         password: formData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone: formData.phone
-          }
-        }
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        role: 'user'
       });
 
-      if (error) {
-        if (error.message.includes('User already registered')) {
+      if (result.error) {
+        if (result.error.includes('User already registered') || result.error.includes('already')) {
           setErrors({
             email: "Este email ya está registrado. Intenta iniciar sesión."
           });
         } else {
           setErrors({
-            general: error.message
+            general: result.error
           });
         }
-      } else {
+      } else if (result.success && result.user) {
         toast({
           title: "¡Cuenta creada!",
-          description: "Revisa tu email para confirmar tu cuenta.",
+          description: "Has sido registrado exitosamente.",
         });
-        navigate("/login/client");
+        navigate("/");
+      } else {
+        setErrors({
+          general: "Error al crear la cuenta. Inténtalo de nuevo."
+        });
       }
-    } catch (error) {
+    } catch (error: any) {
       setErrors({
-        general: "Error de conexión. Inténtalo de nuevo."
+        general: error.message || "Error de conexión. Inténtalo de nuevo."
       });
     } finally {
       setIsLoading(false);

@@ -1,10 +1,11 @@
-// Edge Function URL - update this to your deployed function URL
+// Edge Function URL
 const AUTH_FUNCTION_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/auth';
 
 export interface AuthUser {
   id: string;
   email: string;
   role: string;
+  name?: string;
 }
 
 export interface AuthResponse {
@@ -12,114 +13,177 @@ export interface AuthResponse {
   accessToken?: string;
   refreshToken?: string;
   mfaRequired?: boolean;
+  needsMFA?: boolean;
   error?: string;
+  success?: boolean;
 }
 
 export interface MFAFactor {
   id: string;
-  friendly_name: string;
-  factor_type: 'totp' | 'phone';
-  status: 'verified' | 'unverified';
+  type: string;
+  status: string;
+  friendly_name?: string;
+  totp?: {
+    qr_code: string;
+    secret: string;
+  };
 }
 
 export interface MFAEnrollResponse {
-  factor: {
-    id: string;
-    totp: {
-      qr_code: string;
-      secret: string;
-    };
-  };
+  factor?: MFAFactor;
+  qrCode?: string;
+  secret?: string;
+  error?: string;
 }
 
 export interface MFAChallengeResponse {
-  challenge: {
+  challenge?: {
     id: string;
   };
+  challengeId?: string;
+  error?: string;
+}
+
+export interface MFAListResponse {
+  factors?: {
+    totp: MFAFactor[];
+    phone?: MFAFactor[];
+  };
+  hasVerifiedFactors?: boolean;
+  error?: string;
+}
+
+export interface MFAVerifyResponse {
+  success?: boolean;
+  accessToken?: string;
+  user?: {
+    id: string;
+    role: string;
+  };
+  aal?: string;
+  error?: string;
+}
+
+export interface VerifyResponse {
+  valid: boolean;
+  user?: {
+    id: string;
+    role: string;
+    aal?: string;
+  };
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName?: string;
+  lastName?: string;
+  role?: 'user' | 'owner';
 }
 
 class AuthClient {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private user: AuthUser | null = null;
 
   constructor() {
-    // Load tokens from localStorage on initialization
     if (typeof window !== 'undefined') {
-      this.accessToken = localStorage.getItem('accessToken');
-      this.refreshToken = localStorage.getItem('refreshToken');
+      this.loadTokensFromStorage();
     }
   }
 
+  private loadTokensFromStorage() {
+    this.accessToken = localStorage.getItem('evently_access_token');
+    this.refreshToken = localStorage.getItem('evently_refresh_token');
+    const userData = localStorage.getItem('evently_user');
+    if (userData) {
+      try {
+        this.user = JSON.parse(userData);
+      } catch (error) {
+        console.error('Error parsing user data from localStorage:', error);
+        this.clearTokens();
+      }
+    }
+  }
+
+  private saveTokensToStorage(accessToken: string, refreshToken: string, user: AuthUser) {
+    localStorage.setItem('evently_access_token', accessToken);
+    localStorage.setItem('evently_refresh_token', refreshToken);
+    localStorage.setItem('evently_user', JSON.stringify(user));
+    this.accessToken = accessToken;
+    this.refreshToken = refreshToken;
+    this.user = user;
+  }
+
+  private clearTokens() {
+    localStorage.removeItem('evently_access_token');
+    localStorage.removeItem('evently_refresh_token');
+    localStorage.removeItem('evently_user');
+    this.accessToken = null;
+    this.refreshToken = null;
+    this.user = null;
+  }
+
   private async makeRequest(body: any, requireAuth: boolean = true): Promise<any> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json'
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
     };
 
-    // Only add Authorization header if auth is required and we have a token
     if (requireAuth && this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`;
-    }
-
-    // Add origin header for OAuth redirects
-    if (typeof window !== 'undefined') {
-      headers.Origin = window.location.origin;
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
     }
 
     console.log('🌐 Making request to:', AUTH_FUNCTION_URL);
     console.log('📦 Request body:', body);
     console.log('🔑 Require auth:', requireAuth);
-    console.log('📋 Headers:', headers);
 
     const response = await fetch(AUTH_FUNCTION_URL, {
       method: 'POST',
       headers,
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     });
 
-    console.log('📡 Response status:', response.status);
-    console.log('📡 Response ok:', response.ok);
-
     if (!response.ok) {
-      const error = await response.json();
-      console.error('❌ Error response:', error);
-      throw new Error(error.error || 'Network error');
+      const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
     }
 
-    const result = await response.json();
-    console.log('✅ Success response:', result);
-    return result;
+    return response.json();
   }
 
-  private setTokens(accessToken: string, refreshToken: string) {
-    this.accessToken = accessToken;
-    this.refreshToken = refreshToken;
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', accessToken);
-      localStorage.setItem('refreshToken', refreshToken);
-    }
-  }
-
-  private clearTokens() {
-    this.accessToken = null;
-    this.refreshToken = null;
-    
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-    }
-  }
-
+  // Authentication methods
   async signIn(email: string, password: string): Promise<AuthResponse> {
     try {
       const result = await this.makeRequest({
         action: 'signin',
         email,
         password
-      }, false); // Don't require auth for sign in
+      }, false);
 
-      if (result.accessToken && result.refreshToken) {
-        this.setTokens(result.accessToken, result.refreshToken);
+      if (result.accessToken && result.refreshToken && result.user) {
+        this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
+      }
+
+      return result;
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  }
+
+  async register(data: RegisterRequest): Promise<AuthResponse> {
+    try {
+      const result = await this.makeRequest({
+        action: 'register',
+        email: data.email,
+        password: data.password,
+        firstName: data.firstName,
+        lastName: data.lastName,
+        role: data.role || 'user'
+      }, false);
+
+      if (result.accessToken && result.refreshToken && result.user) {
+        this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
       }
 
       return result;
@@ -132,13 +196,15 @@ class AuthClient {
     try {
       const result = await this.makeRequest({
         action: 'google-signin'
-      }, false); // Don't require auth for Google sign in
+      }, false);
 
-      // The Edge Function returns { data: { url: "..." } }
       if (result.data && result.data.url) {
         // Redirect to Google OAuth
         window.location.href = result.data.url;
         return { data: result.data };
+      } else if (result.redirectUrl) {
+        window.location.href = result.redirectUrl;
+        return { data: { url: result.redirectUrl } };
       } else {
         return { error: 'No OAuth URL received' };
       }
@@ -152,10 +218,10 @@ class AuthClient {
       const result = await this.makeRequest({
         action: 'google-callback',
         code
-      }, false); // Don't require auth for callback
+      }, false);
 
-      if (result.accessToken && result.refreshToken) {
-        this.setTokens(result.accessToken, result.refreshToken);
+      if (result.accessToken && result.refreshToken && result.user) {
+        this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
       }
 
       return result;
@@ -164,40 +230,46 @@ class AuthClient {
     }
   }
 
-  async refreshAccessToken(): Promise<{ accessToken?: string; error?: string }> {
-    if (!this.refreshToken) {
-      return { error: 'No refresh token available' };
-    }
-
+  async refreshAccessToken(): Promise<string | null> {
     try {
+      if (!this.refreshToken) {
+        throw new Error('No refresh token available');
+      }
+
       const result = await this.makeRequest({
         action: 'refresh',
         refresh_token: this.refreshToken
-      });
+      }, false);
 
       if (result.accessToken) {
         this.accessToken = result.accessToken;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('accessToken', result.accessToken);
-        }
+        localStorage.setItem('evently_access_token', result.accessToken);
+        return result.accessToken;
       }
 
-      return result;
+      throw new Error('Failed to refresh token');
     } catch (error) {
-      return { error: (error as Error).message };
+      console.error('Token refresh failed:', error);
+      this.clearTokens();
+      return null;
     }
   }
 
-  async verifyToken(token?: string): Promise<{ valid: boolean; user?: any; error?: string }> {
+  async verifyToken(): Promise<VerifyResponse | null> {
     try {
+      if (!this.accessToken) {
+        return null;
+      }
+
       const result = await this.makeRequest({
         action: 'verify',
-        token: token || this.accessToken
-      });
+        token: this.accessToken
+      }, false);
 
       return result;
     } catch (error) {
-      return { valid: false, error: (error as Error).message };
+      console.error('Token verification failed:', error);
+      return null;
     }
   }
 
@@ -207,7 +279,7 @@ class AuthClient {
         action: 'logout',
         refresh_token: this.refreshToken,
         token: this.accessToken
-      });
+      }, false);
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
@@ -216,58 +288,57 @@ class AuthClient {
   }
 
   // MFA Methods
-  async enrollMFA(): Promise<{ factor?: MFAEnrollResponse['factor']; error?: string }> {
+  async enrollMFA(): Promise<MFAEnrollResponse> {
     try {
       const result = await this.makeRequest({
         action: 'mfa-enroll'
       });
 
-      return { factor: result.factor };
+      return result;
     } catch (error) {
       return { error: (error as Error).message };
     }
   }
 
-  async listMFAFactors(): Promise<{ factors?: { totp: MFAFactor[]; phone: MFAFactor[] }; error?: string }> {
-    try {
-      const result = await this.makeRequest({
-        action: 'mfa-list-factors'
-      });
-
-      return { factors: result.factors };
-    } catch (error) {
-      return { error: (error as Error).message };
-    }
-  }
-
-  async createMFAChallenge(factorId: string): Promise<{ challenge?: { id: string }; error?: string }> {
+  async createMFAChallenge(factorId: string): Promise<MFAChallengeResponse> {
     try {
       const result = await this.makeRequest({
         action: 'mfa-challenge',
         factorId
       });
 
-      return { challenge: result.challenge };
+      return result;
     } catch (error) {
       return { error: (error as Error).message };
     }
   }
 
-  async verifyMFA(factorId: string, challengeId: string, code: string): Promise<{ accessToken?: string; user?: any; error?: string }> {
+  async verifyMFA(factorId: string, challengeId: string, verificationCode: string): Promise<MFAVerifyResponse> {
     try {
       const result = await this.makeRequest({
         action: 'mfa-verify',
         factorId,
         challengeId,
-        code
+        verificationCode
       });
 
+      // Update access token if provided
       if (result.accessToken) {
         this.accessToken = result.accessToken;
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('accessToken', result.accessToken);
-        }
+        localStorage.setItem('evently_access_token', result.accessToken);
       }
+
+      return result;
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  }
+
+  async listMFAFactors(): Promise<MFAListResponse> {
+    try {
+      const result = await this.makeRequest({
+        action: 'mfa-list-factors'
+      });
 
       return result;
     } catch (error) {
@@ -277,31 +348,20 @@ class AuthClient {
 
   async unenrollMFA(factorId: string): Promise<{ success?: boolean; error?: string }> {
     try {
-      await this.makeRequest({
+      const result = await this.makeRequest({
         action: 'mfa-unenroll',
         factorId
       });
 
-      return { success: true };
+      return result;
     } catch (error) {
       return { error: (error as Error).message };
     }
   }
 
+  // Getters
   getCurrentUser(): AuthUser | null {
-    if (!this.accessToken) return null;
-
-    try {
-      // Decode JWT payload (basic decode, not verification)
-      const payload = JSON.parse(atob(this.accessToken.split('.')[1]));
-      return {
-        id: payload.sub,
-        email: payload.email || '',
-        role: payload.role
-      };
-    } catch {
-      return null;
-    }
+    return this.user;
   }
 
   getAccessToken(): string | null {
@@ -310,6 +370,10 @@ class AuthClient {
 
   getRefreshToken(): string | null {
     return this.refreshToken;
+  }
+
+  isAuthenticated(): boolean {
+    return !!(this.accessToken && this.user);
   }
 }
 
