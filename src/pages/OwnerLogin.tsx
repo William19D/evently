@@ -53,9 +53,30 @@ const OwnerLogin = () => {
       const result = await signInWithMfa(email, password);
       
       if (result.error) {
-        setErrors({
-          general: result.error.includes('Invalid') ? "Credenciales incorrectas. Verifica tu email y contraseña." : result.error
-        });
+        // Manejo específico para error de email no verificado
+        if (result.error.includes('verificar tu email')) {
+          setErrors({
+            general: result.error
+          });
+          // Mostrar opción para reenviar verificación
+          setTimeout(() => {
+            if (window.confirm('¿Quieres que te reenviemos el código de verificación?')) {
+              navigate("/verify-email", {
+                state: {
+                  email: email,
+                  role: 'owner',
+                  fromLogin: true
+                }
+              });
+            }
+          }, 2000);
+        } else {
+          setErrors({
+            general: result.error.includes('Invalid') || result.error.includes('inválidas')
+              ? "Credenciales incorrectas. Verifica tu email y contraseña." 
+              : result.error
+          });
+        }
       } else if (result.requiresMfa && result.mfaData) {
         // Usuario con MFA habilitado - pedir código de verificación
         navigate("/two-factor-auth", {
@@ -129,7 +150,7 @@ const OwnerLogin = () => {
             <Alert className="bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20">
               <AlertCircle className="h-4 w-4 text-emerald-600" />
               <AlertDescription className="text-emerald-700 dark:text-emerald-300">
-                <strong>Demo:</strong> propietario@evently.com / 12345678
+                <strong>Inicio de sesión:</strong> Usa tu email y contraseña verificados
               </AlertDescription>
             </Alert>
 

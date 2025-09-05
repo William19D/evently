@@ -82,7 +82,16 @@ export interface RegisterRequest {
   password: string;
   firstName?: string;
   lastName?: string;
-  role?: 'user' | 'owner';
+  role?: 'member' | 'owner';
+}
+
+export interface VerifyEmailRequest {
+  email: string;
+  verificationCode: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
 }
 
 class AuthClient {
@@ -220,12 +229,36 @@ class AuthClient {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: data.role || 'user'
+        role: data.role || 'member' // Cambiar default de 'user' a 'member'
       }, false);
 
-      if (result.accessToken && result.refreshToken && result.user) {
-        this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
-      }
+      // Para registro, NO guardamos tokens inmediatamente porque necesita verificación por email
+      return result;
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  }
+
+  async verifyEmail(data: VerifyEmailRequest): Promise<AuthResponse> {
+    try {
+      const result = await this.makeRequest({
+        action: 'verify-email',
+        email: data.email,
+        verificationCode: data.verificationCode
+      }, false);
+
+      return result;
+    } catch (error) {
+      return { error: (error as Error).message };
+    }
+  }
+
+  async resendVerification(data: ResendVerificationRequest): Promise<AuthResponse> {
+    try {
+      const result = await this.makeRequest({
+        action: 'resend-verification',
+        email: data.email
+      }, false);
 
       return result;
     } catch (error) {

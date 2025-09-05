@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, Building2, MapPin } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, Building2, MapPin, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { authClient } from "@/lib/authClient";
 import authBackground from "@/assets/auth-background.jpg";
@@ -29,6 +29,7 @@ const OwnerRegister = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -116,7 +117,7 @@ const OwnerRegister = () => {
       });
 
       if (result.error) {
-        if (result.error.includes('User already registered') || result.error.includes('already')) {
+        if (result.error.includes('User already registered') || result.error.includes('ya está registrado')) {
           setErrors({
             email: "Este email ya está registrado. Intenta iniciar sesión."
           });
@@ -125,12 +126,12 @@ const OwnerRegister = () => {
             general: result.error
           });
         }
-      } else if (result.success && result.user) {
+      } else if (result.success) {
+        setRegistrationSuccess(true);
         toast({
-          title: "¡Cuenta de propietario creada!",
-          description: "Tu cuenta ha sido creada exitosamente.",
+          title: "¡Registro exitoso!",
+          description: "Revisa tu email para confirmar tu cuenta.",
         });
-        navigate("/dashboard");
       } else {
         setErrors({
           general: "Error al crear la cuenta. Inténtalo de nuevo."
@@ -172,6 +173,52 @@ const OwnerRegister = () => {
           </Link>
 
           <Card className="shadow-lg border-0">
+          {registrationSuccess ? (
+            <CardContent className="space-y-6 text-center pt-8">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+              </div>
+              
+              <div className="space-y-3">
+                <h3 className="text-xl font-semibold text-green-800">¡Registro Exitoso!</h3>
+                <p className="text-muted-foreground">
+                  Te has registrado como <strong>Propietario</strong> en Evently
+                </p>
+              </div>
+
+              <Alert className="bg-blue-50 border-blue-200">
+                <Mail className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-700">
+                  <strong>Confirma tu email:</strong> Hemos enviado un email de confirmación a <strong>{formData.email}</strong>. 
+                  Haz clic en el enlace del email para activar tu cuenta.
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-3 text-sm text-muted-foreground">
+                <p>🎉 <strong>¿Qué puedes hacer después de confirmar?</strong></p>
+                <ul className="space-y-1 text-left">
+                  <li>• Crear y gestionar tus espacios</li>
+                  <li>• Publicar eventos exclusivos</li>
+                  <li>• Acceder a herramientas de propietario</li>
+                  <li>• Conectar con clientes</li>
+                </ul>
+              </div>
+
+              <div className="pt-4 space-y-3">
+                <Button 
+                  onClick={() => navigate('/login/owner')}
+                  className="w-full"
+                  size="lg"
+                >
+                  Ir a Iniciar Sesión
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  Revisa también tu carpeta de spam si no encuentras el email
+                </p>
+              </div>
+            </CardContent>
+          ) : (
+            <>
           <CardHeader className="text-center space-y-2">
             <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
               <Building2 className="w-6 h-6 text-primary" />
@@ -193,7 +240,7 @@ const OwnerRegister = () => {
             <Alert className="bg-amber-50 border-amber-200 dark:bg-amber-900/20">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="text-amber-700 dark:text-amber-300">
-                Como propietario, tu cuenta será revisada antes de la activación por seguridad.
+                <strong>Registro como Propietario:</strong> Después del registro recibirás un email con un enlace para confirmar tu cuenta. Una vez confirmada, podrás crear y gestionar tus espacios.
               </AlertDescription>
             </Alert>
 
@@ -434,6 +481,8 @@ const OwnerRegister = () => {
               </Link>
             </div>
           </CardContent>
+          </>
+          )}
         </Card>
         </div>
       </div>

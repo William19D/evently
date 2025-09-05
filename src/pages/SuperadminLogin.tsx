@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { authClient } from "@/lib/authClient";
 import authBackground from "@/assets/auth-background.jpg";
 
 const SuperadminLogin = () => {
@@ -18,7 +19,7 @@ const SuperadminLogin = () => {
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, signIn } = useAuth();
+  const { user, signIn, signOut } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -60,16 +61,37 @@ const SuperadminLogin = () => {
       const result = await signIn(email, password);
       
       if (result.error) {
-        setErrors({
-          general: result.error.includes('Invalid') ? "Credenciales incorrectas. Verifica tu email y contraseña." : result.error
-        });
+        // Manejo específico para superadmin
+        if (result.error.includes('verificar tu email')) {
+          setErrors({
+            general: "Esta cuenta necesita ser activada. Contacta al administrador del sistema."
+          });
+        } else {
+          setErrors({
+            general: result.error.includes('Invalid') || result.error.includes('inválidas')
+              ? "Credenciales incorrectas. Verifica tu email y contraseña." 
+              : result.error
+          });
+        }
+      } else if (result.success) {
+        // Verificar que el usuario tenga rol de superadmin
+        const currentUser = authClient.getCurrentUser();
+        if (currentUser && currentUser.role === 'superadmin') {
+          toast({
+            title: "¡Bienvenido Superadministrador!",
+            description: "Has iniciado sesión correctamente.",
+          });
+          navigate("/superadmin/dashboard");
+        } else {
+          setErrors({
+            general: "Acceso denegado. Este usuario no tiene permisos de superadministrador."
+          });
+          await signOut(); // Cerrar sesión si no es superadmin
+        }
       } else {
-        // Login exitoso - verificar rol de superadmin aquí cuando esté implementado
-        toast({
-          title: "¡Bienvenido Superadministrador!",
-          description: "Has iniciado sesión correctamente.",
+        setErrors({
+          general: "Error de autenticación. Inténtalo de nuevo."
         });
-        navigate("/superadmin/dashboard");
       }
     } catch (error) {
       console.error('Login error:', error);

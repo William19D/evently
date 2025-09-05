@@ -62,9 +62,30 @@ const ClientLogin = () => {
       const result = await signInWithMfa(email, password);
       
       if (result.error) {
-        setErrors({
-          general: result.error.includes('Invalid') ? "Credenciales incorrectas. Verifica tu email y contraseña." : result.error
-        });
+        // Manejo específico para error de email no verificado
+        if (result.error.includes('verificar tu email')) {
+          setErrors({
+            general: result.error
+          });
+          // Mostrar opción para reenviar verificación
+          setTimeout(() => {
+            if (window.confirm('¿Quieres que te reenviemos el código de verificación?')) {
+              navigate("/verify-email", {
+                state: {
+                  email: email,
+                  role: 'member',
+                  fromLogin: true
+                }
+              });
+            }
+          }, 2000);
+        } else {
+          setErrors({
+            general: result.error.includes('Invalid') || result.error.includes('inválidas') 
+              ? "Credenciales incorrectas. Verifica tu email y contraseña." 
+              : result.error
+          });
+        }
       } else if (result.requiresMfa && result.mfaData) {
         // Usuario con MFA habilitado - pedir código de verificación
         navigate("/two-factor-auth", {
@@ -138,7 +159,7 @@ const ClientLogin = () => {
             <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-700 dark:text-blue-300">
-                <strong>Inicia sesión:</strong> Usa tu email y contraseña para acceder
+                <strong>Inicio de sesión:</strong> Usa tu email y contraseña verificados
               </AlertDescription>
             </Alert>
 

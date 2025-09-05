@@ -14,6 +14,7 @@ import ClientLogin from "./pages/ClientLogin";
 import OwnerLogin from "./pages/OwnerLogin";
 import ClientRegister from "./pages/ClientRegister";
 import OwnerRegister from "./pages/OwnerRegister";
+import EmailConfirmation from '@/pages/EmailConfirmation';
 
 import EventDetails from "./pages/EventDetails";
 import About from "./pages/About";
@@ -48,6 +49,7 @@ const App = () => (
               <Route path="/login/owner" element={<OwnerLogin />} />
               <Route path="/register/client" element={<ClientRegister />} />
               <Route path="/register/owner" element={<OwnerRegister />} />
+              <Route path="/email-confirmation" element={<EmailConfirmation />} />
               
               {/* Legacy routes for backwards compatibility */}
               <Route path="/login" element={<AuthSelection />} />

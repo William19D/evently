@@ -15,6 +15,9 @@ interface AuthContextType {
   verifyMfaChallenge: (code: string, factorId: string) => Promise<boolean>;
   unenrollMfa: (factorId?: string) => Promise<boolean>;
   signInWithMfa: (email: string, password: string) => Promise<{ requiresMfa: boolean; mfaData?: any; error?: string; needsSetup?: boolean }>;
+  // Nuevas funciones para email verification
+  verifyEmail: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
+  resendVerification: (email: string) => Promise<{ success: boolean; error?: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -319,6 +322,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const verifyEmail = async (email: string, code: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await authClient.verifyEmail({ email, verificationCode: code });
+      
+      if (result.error) {
+        return { success: false, error: result.error };
+      }
+      
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || "Error verifying email" };
+    }
+  };
+
+  const resendVerification = async (email: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const result = await authClient.resendVerification({ email });
+      
+      if (result.error) {
+        return { success: false, error: result.error };
+      }
+      
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.message || "Error resending verification" };
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -331,7 +362,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     verifyMfaLogin,
     verifyMfaChallenge,
     unenrollMfa,
-    signInWithMfa
+    signInWithMfa,
+    verifyEmail,
+    resendVerification
   };
 
   return (

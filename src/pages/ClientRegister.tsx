@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Chrome, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Chrome, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { authClient } from "@/lib/authClient";
@@ -26,6 +26,8 @@ const ClientRegister = () => {
     acceptTerms: false
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [showEmailSent, setShowEmailSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -105,11 +107,11 @@ const ClientRegister = () => {
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        role: 'user'
+        role: 'member' // Cliente se registra como 'member'
       });
 
       if (result.error) {
-        if (result.error.includes('User already registered') || result.error.includes('already')) {
+        if (result.error.includes('User already registered') || result.error.includes('ya está registrado')) {
           setErrors({
             email: "Este email ya está registrado. Intenta iniciar sesión."
           });
@@ -118,12 +120,16 @@ const ClientRegister = () => {
             general: result.error
           });
         }
-      } else if (result.success && result.user) {
+      } else if (result.success) {
         toast({
-          title: "¡Cuenta creada!",
-          description: "Has sido registrado exitosamente.",
+          title: "¡Registro exitoso!",
+          description: "Te hemos enviado un email de confirmación. Revisa tu bandeja de entrada y haz clic en el enlace para activar tu cuenta.",
         });
-        navigate("/");
+        
+        // Mostrar mensaje de email enviado
+        setRegisteredEmail(formData.email);
+        setShowEmailSent(true);
+        setErrors({});
       } else {
         setErrors({
           general: "Error al crear la cuenta. Inténtalo de nuevo."
@@ -137,6 +143,95 @@ const ClientRegister = () => {
       setIsLoading(false);
     }
   };
+
+  // Si se ha enviado el email de confirmación, mostrar mensaje
+  if (showEmailSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-lg border-0">
+            <CardHeader className="text-center space-y-2">
+              <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                <Mail className="w-8 h-8 text-green-600" />
+              </div>
+              <CardTitle className="text-2xl font-semibold">¡Registro Exitoso!</CardTitle>
+              <CardDescription>
+                Verifica tu email para completar el registro
+              </CardDescription>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-700 dark:text-green-300">
+                  <strong>¡Te has registrado exitosamente como Cliente!</strong>
+                  <br />
+                  <br />
+                  Hemos enviado un email de confirmación a:
+                  <br />
+                  <strong>{registeredEmail}</strong>
+                </AlertDescription>
+              </Alert>
+
+              <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
+                <Mail className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-blue-700 dark:text-blue-300">
+                  <strong>¿Qué hacer ahora?</strong>
+                  <br />
+                  1. Revisa tu email (incluye la carpeta de spam)
+                  <br />
+                  2. Haz clic en el enlace "Confirmar mi cuenta"
+                  <br />
+                  3. ¡Tu cuenta estará lista para usar!
+                </AlertDescription>
+              </Alert>
+
+              <div className="space-y-2">
+                <Button 
+                  onClick={() => navigate('/login/client')}
+                  className="w-full shadow-md hover:shadow-lg transition-all duration-200" 
+                  size="lg"
+                >
+                  Ir al Login
+                </Button>
+                
+                <Button 
+                  onClick={() => {
+                    setShowEmailSent(false);
+                    setRegisteredEmail('');
+                    setFormData({
+                      firstName: '',
+                      lastName: '',
+                      email: '',
+                      phone: '',
+                      password: '',
+                      confirmPassword: '',
+                      acceptTerms: false
+                    });
+                  }}
+                  variant="outline"
+                  className="w-full transition-all duration-200" 
+                  size="lg"
+                >
+                  Registrar otra cuenta
+                </Button>
+              </div>
+
+              <div className="text-center text-sm text-muted-foreground border-t pt-4">
+                ¿No recibiste el email?{" "}
+                <a 
+                  href="mailto:eventlysoporte@gmail.com" 
+                  className="text-primary hover:underline font-medium transition-colors"
+                >
+                  Contactar soporte
+                </a>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 flex">
@@ -186,7 +281,7 @@ const ClientRegister = () => {
             <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-700 dark:text-blue-300">
-                <strong>Registro:</strong> Crea tu cuenta con email y contraseña
+                <strong>Registro como Cliente:</strong> Después del registro recibirás un email de verificación
               </AlertDescription>
             </Alert>
 
