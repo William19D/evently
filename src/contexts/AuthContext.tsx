@@ -24,6 +24,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [isMfaEnabled, setIsMfaEnabled] = useState(false);
 
+  // MFA functions defined before useEffect
+  const checkMfaStatus = async (): Promise<boolean> => {
+    try {
+      const result = await authClient.listMFAFactors();
+      
+      if (result.error) {
+        console.error('Error checking MFA status:', result.error);
+        return false;
+      }
+
+      const isEnabled = result.factors?.totp?.some(factor => factor.status === 'verified') ?? false;
+      setIsMfaEnabled(isEnabled);
+      return isEnabled;
+    } catch (error) {
+      console.error('Error checking MFA status:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     const initializeAuth = async () => {
       setIsLoading(true);
@@ -94,24 +113,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // MFA functions now use the new Edge Function
-  const checkMfaStatus = async (): Promise<boolean> => {
-    try {
-      const result = await authClient.listMFAFactors();
-      
-      if (result.error) {
-        console.error('Error checking MFA status:', result.error);
-        return false;
-      }
-
-      const isEnabled = result.factors?.totp?.some(factor => factor.status === 'verified') ?? false;
-      setIsMfaEnabled(isEnabled);
-      return isEnabled;
-    } catch (error) {
-      console.error('Error checking MFA status:', error);
-      return false;
-    }
-  };
 
   const enrollMfa = async (): Promise<{ qrCode: string; secret: string; factorId: string } | null> => {
     try {
