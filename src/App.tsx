@@ -26,6 +26,8 @@ import MfaSetup from "./pages/MfaSetup";
 import UserProfile from "./pages/UserProfile";
 import MfaDebug from "./components/MfaDebug";
 import NotFound from "./pages/NotFound";
+import SuperadminLogin from "./pages/SuperadminLogin";
+import SuperadminDashboard from "./pages/SuperadminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -61,6 +63,9 @@ const App = () => (
               <Route path="/mfa-setup" element={<MfaSetup />} />
               {/* Legacy 2FA route for backwards compatibility */}
               <Route path="/2fa" element={<TwoFactorAuth />} />
+              {/* Superadmin routes - hidden URLs */}
+              <Route path="/superadmin/login" element={<SuperadminLogin />} />
+              <Route path="/superadmin/dashboard" element={<SuperadminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
