@@ -7,9 +7,7 @@ interface AuthContextType {
   isLoading: boolean;
   isMfaEnabled: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; mfaRequired?: boolean; error?: string }>;
-  signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
-  handleGoogleCallback: (code: string) => Promise<{ success: boolean; error?: string }>;
   checkMfaStatus: () => Promise<boolean>;
   enrollMfa: () => Promise<{ qrCode: string; secret: string; factorId: string } | null>;
   verifyAndEnableMfa: (code: string, factorId: string) => Promise<boolean>;
@@ -82,57 +80,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signInWithGoogle = async (): Promise<void> => {
-    try {
-      setIsLoading(true);
-      await authClient.signInWithGoogle();
-      // The actual authentication will be handled in the callback page
-    } catch (error: any) {
-      setIsLoading(false);
-      throw new Error(error.message || 'Google sign in failed');
-    }
-  };
-
-  const handleGoogleCallback = async (code: string): Promise<{ success: boolean; error?: string }> => {
-    try {
-      logAuthStep('CONTEXT_GOOGLE_CALLBACK_START', { codeLength: code.length });
-      setIsLoading(true);
-      
-      const response = await authClient.handleGoogleCallback(code);
-      
-      logAuthStep('CONTEXT_CALLBACK_RESPONSE', {
-        hasError: !!response.error,
-        hasUser: !!response.user,
-        error: response.error,
-        userEmail: response.user?.email,
-        userRole: response.user?.role
-      });
-      
-      if (response.error) {
-        logAuthError('CONTEXT_CALLBACK_ERROR', response.error);
-        return { success: false, error: response.error };
-      }
-
-      if (response.user) {
-        logAuthStep('CONTEXT_SETTING_USER', {
-          userEmail: response.user.email,
-          userRole: response.user.role,
-          userId: response.user.id
-        });
-        setUser(response.user);
-        await checkMfaStatus();
-        return { success: true };
-      }
-
-      logAuthStep('CONTEXT_NO_USER_WARNING', 'No user in response');
-      return { success: false, error: 'No se recibió información del usuario' };
-    } catch (error: any) {
-      logAuthError('CONTEXT_GOOGLE_CALLBACK_EXCEPTION', error);
-      return { success: false, error: error.message || 'Error de autenticación con Google' };
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const signOut = async (): Promise<void> => {
     try {
@@ -376,9 +323,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isLoading,
     isMfaEnabled,
     signIn,
-    signInWithGoogle,
     signOut,
-    handleGoogleCallback,
     checkMfaStatus,
     enrollMfa,
     verifyAndEnableMfa,

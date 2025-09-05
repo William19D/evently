@@ -19,7 +19,7 @@ const ClientLogin = () => {
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, signIn, signInWithGoogle, signInWithMfa } = useAuth();
+  const { user, signIn, signInWithMfa } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -47,22 +47,6 @@ const ClientLogin = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleGoogleSignIn = async () => {
-    try {
-      setIsLoading(true);
-      await signInWithGoogle();
-      // The actual redirect and success handling will be done in AuthCallback
-    } catch (error) {
-      console.error('Google sign in error:', error);
-      toast({
-        title: "Error",
-        description: "No se pudo conectar con Google. Inténtalo de nuevo.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,31 +138,9 @@ const ClientLogin = () => {
             <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
               <AlertCircle className="h-4 w-4 text-blue-600" />
               <AlertDescription className="text-blue-700 dark:text-blue-300">
-                <strong>Opciones:</strong> Usa Google OAuth o crea una cuenta con email/contraseña
+                <strong>Inicia sesión:</strong> Usa tu email y contraseña para acceder
               </AlertDescription>
             </Alert>
-
-            <div className="space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full hover:bg-primary/5 transition-colors" 
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading}
-              >
-                <Chrome className="w-4 h-4 mr-2" />
-                {isLoading ? "Conectando..." : "Continuar con Google"}
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">O continúa con email</span>
-              </div>
-            </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">

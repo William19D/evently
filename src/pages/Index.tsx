@@ -15,16 +15,12 @@ const Index = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if we should show MFA prompt for new users
+    // Check if we should show MFA prompt for users without MFA
     if (!isLoading && user && !isMfaEnabled) {
-      // Check if this is a new user (created within last 24 hours)
-      const isNewUser = user.created_at && 
-        (Date.now() - new Date(user.created_at).getTime()) < 24 * 60 * 60 * 1000;
-      
       // Check if user has already dismissed the prompt (stored in localStorage)
       const hasShownPrompt = localStorage.getItem(`mfa-prompt-shown-${user.id}`);
       
-      if (isNewUser && !hasShownPrompt) {
+      if (!hasShownPrompt) {
         setShowMfaPrompt(true);
       }
     }

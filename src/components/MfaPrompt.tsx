@@ -21,14 +21,8 @@ const MfaPrompt: React.FC<MfaPromptProps> = ({ onDismiss, onSetup }) => {
     return null;
   }
 
-  // Check if this is likely a new user (created within last 24 hours)
-  const isNewUser = user.created_at && 
-    (Date.now() - new Date(user.created_at).getTime()) < 24 * 60 * 60 * 1000;
-
-  // Don't show for existing users who haven't set up MFA
-  if (!isNewUser) {
-    return null;
-  }
+  // Always show for authenticated users without MFA (simplified logic)
+  // You can add your own logic here to determine when to show the prompt
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

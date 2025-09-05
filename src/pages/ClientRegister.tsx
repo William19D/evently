@@ -29,7 +29,7 @@ const ClientRegister = () => {
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, signInWithGoogle } = useAuth();
+  const { user } = useAuth();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -88,21 +88,6 @@ const ClientRegister = () => {
     }
   };
 
-  const handleGoogleSignUp = async () => {
-    try {
-      setIsLoading(true);
-      await signInWithGoogle();
-      // The actual authentication will be handled in the callback page
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "No se pudo conectar con Google. Inténtalo de nuevo.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -198,27 +183,12 @@ const ClientRegister = () => {
               </Alert>
             )}
 
-            <div className="space-y-3">
-              <Button 
-                variant="outline" 
-                className="w-full hover:bg-primary/5 transition-colors" 
-                type="button"
-                onClick={handleGoogleSignUp}
-                disabled={isLoading}
-              >
-                <Chrome className="w-4 h-4 mr-2" />
-                {isLoading ? "Conectando..." : "Registrarse con Google"}
-              </Button>
-            </div>
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">O regístrate con email</span>
-              </div>
-            </div>
+            <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">
+              <AlertCircle className="h-4 w-4 text-blue-600" />
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
+                <strong>Registro:</strong> Crea tu cuenta con email y contraseña
+              </AlertDescription>
+            </Alert>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
