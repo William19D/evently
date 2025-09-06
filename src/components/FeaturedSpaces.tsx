@@ -2,21 +2,37 @@ import VenueCard from "./VenueCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { sampleEvents } from "@/data/events";
 
 const FeaturedSpaces = () => {
-  // Use sample events data
-  const featuredVenues = sampleEvents.map(event => ({
-    id: event.id,
-    name: event.title,
-    location: `${event.location.city}, ${event.location.department}`,
-    image: event.image,
-    price: event.price,
-    rating: event.rating,
-    capacity: `Hasta ${event.capacity} personas`,
-    amenities: event.amenities.slice(0, 3),
-    featured: true
-  }));
+  // Datos hardcodeados eliminados - ahora debe conectarse a la API
+  const featuredVenues: any[] = [];
+
+  // Mostrar mensaje mientras no hay conexión a la API
+  if (featuredVenues.length === 0) {
+    return (
+      <section className="py-16 bg-surface">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-display font-bold text-foreground mb-4">
+              Espacios Destacados
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Próximamente encontrarás aquí los espacios más populares
+            </p>
+          </div>
+
+          <div className="text-center">
+            <Button variant="outline" size="lg" className="group" asChild>
+              <Link to="/search">
+                Explorar Espacios
+                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="py-16 bg-surface">

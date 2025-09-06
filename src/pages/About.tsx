@@ -60,21 +60,21 @@ const About = () => {
             <div className="flex justify-center mb-3">
               <Users className="w-8 h-8 text-primary" />
             </div>
-            <div className="text-3xl font-bold text-foreground">500+</div>
+            <div className="text-3xl font-bold text-foreground">-</div>
             <div className="text-sm text-muted-foreground">Espacios</div>
           </div>
           <div className="text-center">
             <div className="flex justify-center mb-3">
               <Calendar className="w-8 h-8 text-primary" />
             </div>
-            <div className="text-3xl font-bold text-foreground">2K+</div>
+            <div className="text-3xl font-bold text-foreground">-</div>
             <div className="text-sm text-muted-foreground">Eventos</div>
           </div>
           <div className="text-center">
             <div className="flex justify-center mb-3">
               <Award className="w-8 h-8 text-primary" />
             </div>
-            <div className="text-3xl font-bold text-foreground">98%</div>
+            <div className="text-3xl font-bold text-foreground">-</div>
             <div className="text-sm text-muted-foreground">Satisfacción</div>
           </div>
         </div>

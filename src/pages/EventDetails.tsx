@@ -22,7 +22,9 @@ const EventDetails = () => {
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
           <h1 className="text-2xl font-bold">Evento no encontrado</h1>
-          <p className="text-muted-foreground">El evento que buscas no existe o ha sido eliminado.</p>
+          <p className="text-muted-foreground">
+            Los detalles de eventos estarán disponibles una vez que se complete la integración con la base de datos.
+          </p>
           <Link to="/search">
             <Button>Volver a búsqueda</Button>
           </Link>

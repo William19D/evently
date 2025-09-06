@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +23,9 @@ import {
 
 const AccessibilityPanel = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState('top-1/2 -translate-y-1/2');
+  const panelRef = useRef<HTMLDivElement>(null);
+  
   const { 
     fontScale, 
     setFontScale, 
@@ -36,6 +39,57 @@ const AccessibilityPanel = () => {
     setReduceMotion,
     stopSpeaking 
   } = useAccessibility();
+
+  // Ajustar posición del panel si se sale de la pantalla
+  useEffect(() => {
+    const updatePosition = () => {
+      if (panelRef.current) {
+        const viewportHeight = window.innerHeight;
+        const panelHeight = panelRef.current.offsetHeight || 500; // fallback height
+        const margin = 40; // Top and bottom margin
+        
+        if (panelHeight <= viewportHeight - margin) {
+          // Panel fits in viewport, center it
+          setPosition('top-1/2 -translate-y-1/2');
+        } else {
+          // Panel is too tall, align to top with margin
+          setPosition('top-4');
+        }
+      }
+    };
+
+    const handleResize = () => {
+      updatePosition();
+    };
+
+    if (isOpen) {
+      // Initial positioning with a slight delay to ensure DOM is updated
+      const timer = setTimeout(updatePosition, 50);
+      
+      window.addEventListener('resize', handleResize);
+      
+      return () => {
+        clearTimeout(timer);
+        window.removeEventListener('resize', handleResize);
+      };
+    }
+  }, [isOpen]);
+
+  // Cerrar panel con Escape
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        setIsOpen(false);
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown, { capture: true });
+      return () => document.removeEventListener('keydown', handleKeyDown, { capture: true });
+    }
+  }, [isOpen]);
 
   const handleFontScaleChange = (value: number[]) => {
     setFontScale(value[0]);
@@ -59,7 +113,7 @@ const AccessibilityPanel = () => {
   };
 
   return (
-    <div className="fixed right-0 top-1/2 -translate-y-1/2 z-50 accessibility-panel max-h-[calc(100vh-40px)] h-auto">
+    <div className={`fixed right-0 ${position} z-50 accessibility-panel`}>
       {/* Toggle Button */}
       <Button
         variant="outline"
@@ -67,7 +121,7 @@ const AccessibilityPanel = () => {
         onClick={() => setIsOpen(!isOpen)}
         className={`${
           isOpen ? 'rounded-r-none' : 'rounded-l-none'
-        } bg-background shadow-lg border-l-0 h-12 w-12 md:w-auto`}
+        } bg-background shadow-lg border-l-0 h-12 w-12 md:w-auto transition-all duration-200 hover:shadow-xl`}
         aria-label="Abrir panel de accesibilidad"
       >
         {isOpen ? (
@@ -82,14 +136,15 @@ const AccessibilityPanel = () => {
 
       {/* Panel */}
       <div
-        className={`transition-transform duration-300 ${
-          isOpen ? 'translate-x-0' : 'translate-x-full'
-        } absolute right-0 top-0 max-h-[calc(100vh-40px)] flex flex-col`}
+        ref={panelRef}
+        className={`transition-all duration-300 ease-in-out ${
+          isOpen ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'
+        } absolute right-0 ${position.includes('top-1/2') ? 'top-0' : position.includes('bottom') ? 'bottom-0' : 'top-0'}`}
       >
-        <Card className="w-80 md:w-96 shadow-xl border-l-0 rounded-l-lg rounded-r-none max-h-[calc(100vh-40px)] flex flex-col overflow-hidden">
-          <CardHeader className="pb-3 flex flex-row items-center justify-between bg-card z-10 border-b flex-shrink-0">
+        <Card className="w-80 md:w-96 shadow-2xl border-l-0 rounded-l-lg rounded-r-none max-h-[85vh] min-h-[400px] flex flex-col overflow-hidden backdrop-blur-sm bg-background/95">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between bg-card/90 backdrop-blur-sm z-10 border-b flex-shrink-0 sticky top-0">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Accessibility className="w-5 h-5" />
+              <Accessibility className="w-5 h-5 text-primary" />
               <span className="hidden md:inline">Accesibilidad</span>
               <span className="md:hidden">A11y</span>
             </CardTitle>
@@ -97,15 +152,15 @@ const AccessibilityPanel = () => {
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(false)}
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 hover:bg-destructive/10 hover:text-destructive"
               aria-label="Cerrar panel"
             >
               <X className="w-4 h-4" />
             </Button>
           </CardHeader>
           
-          <div className="flex-1 overflow-y-auto overflow-x-hidden">
-            <CardContent className="space-y-4 md:space-y-6 p-4 md:p-6 pb-6">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border">
+            <CardContent className="space-y-4 md:space-y-5 p-4 md:p-6 pb-8">
             {/* Font Size Controls */}
             <div className="space-y-3 md:space-y-4">
               <div className="flex items-center gap-2">

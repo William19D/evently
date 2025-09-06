@@ -14,75 +14,10 @@ const VenueSearch = () => {
   const [priceRange, setPriceRange] = useState([0, 1500000]);
   const [showFilters, setShowFilters] = useState(false);
 
-  // Mock data for search results
-  const searchResults = [
-    {
-      id: "1",
-      name: "Centro de Eventos Armenia Plaza",
-      location: "Centro, Armenia - Quindío",
-      image: "https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&q=80",
-      price: 450000,
-      rating: 4.8,
-      capacity: "150-200 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: true
-    },
-    {
-      id: "2", 
-      name: "Hacienda Cafetera El Ocaso",
-      location: "Circasia, Armenia - Quindío",
-      image: "https://images.unsplash.com/photo-1464207687429-7505649dae38?w=800&q=80",
-      price: 1200000,
-      rating: 4.9,
-      capacity: "80-120 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: true
-    },
-    {
-      id: "3",
-      name: "Auditorio Cenexpo Armenia",
-      location: "Zona Rosa, Armenia - Quindío",
-      image: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=80",
-      price: 850000,
-      rating: 4.7,
-      capacity: "200-300 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: false
-    },
-    {
-      id: "4",
-      name: "Jardín Bambú Recinto del Pensamiento",
-      location: "Manizales, Caldas",
-      image: "https://images.unsplash.com/photo-1519225421980-715cb0215aed?w=800&q=80",
-      price: 380000,
-      rating: 4.6,
-      capacity: "100-150 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: false
-    },
-    {
-      id: "5",
-      name: "Loft Urbano Pereira",
-      location: "Centro, Pereira - Risaralda",
-      image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-      price: 320000,
-      rating: 4.5,
-      capacity: "60-80 personas",
-      amenities: ["WiFi", "Parking"],
-      featured: false
-    },
-    {
-      id: "6",
-      name: "Salón de Cristal Medellín",
-      location: "El Poblado, Medellín - Antioquia",
-      image: "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&q=80",
-      price: 950000,
-      rating: 4.9,
-      capacity: "100-150 personas",
-      amenities: ["WiFi", "Parking", "Catering"],
-      featured: false
-    }
-  ];
+  // Datos de espacios hardcodeados eliminados - ahora debe usar la API
+  const searchResults: any[] = [];
+
+  const filteredResults = searchResults; // Sin filtrado por ahora
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,22 +151,33 @@ const VenueSearch = () => {
 
           {/* Results Grid */}
           <div className="flex-1">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {searchResults.map((venue) => (
-                <VenueCard key={venue.id} {...venue} />
-              ))}
-            </div>
-
-            {/* Pagination */}
-            <div className="flex justify-center mt-12">
-              <div className="flex gap-2">
-                <Button variant="outline" disabled>Anterior</Button>
-                <Button variant="default">1</Button>
-                <Button variant="outline">2</Button>
-                <Button variant="outline">3</Button>
-                <Button variant="outline">Siguiente</Button>
+            {searchResults.length === 0 ? (
+              <div className="text-center py-16">
+                <h3 className="text-2xl font-semibold mb-4">Próximamente</h3>
+                <p className="text-muted-foreground">
+                  Los espacios estarán disponibles una vez que se complete la integración con la base de datos.
+                </p>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {searchResults.map((venue) => (
+                    <VenueCard key={venue.id} {...venue} />
+                  ))}
+                </div>
+
+                {/* Pagination */}
+                <div className="flex justify-center mt-12">
+                  <div className="flex gap-2">
+                    <Button variant="outline" disabled>Anterior</Button>
+                    <Button variant="default">1</Button>
+                    <Button variant="outline">2</Button>
+                    <Button variant="outline">3</Button>
+                    <Button variant="outline">Siguiente</Button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </main>

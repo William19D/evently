@@ -14,42 +14,42 @@ const Categories = () => {
       name: "Bodas",
       icon: Heart,
       description: "Espacios románticos para tu día especial",
-      count: "85+ espacios",
+      count: "Espacios disponibles",
       color: "text-pink-500"
     },
     {
       name: "Eventos Corporativos",
       icon: Briefcase,
       description: "Salas profesionales para reuniones y conferencias",
-      count: "120+ espacios",
+      count: "Espacios disponibles",
       color: "text-blue-500"
     },
     {
       name: "Quinceañeros",
       icon: GraduationCap,
       description: "Celebra los 15 años en grande",
-      count: "65+ espacios",
+      count: "Espacios disponibles",
       color: "text-green-500"
     },
     {
       name: "Conciertos",
       icon: Music,
       description: "Auditorios y espacios para presentaciones musicales",
-      count: "40+ espacios",
+      count: "Espacios disponibles",
       color: "text-purple-500"
     },
     {
       name: "Primeras Comuniones",
       icon: Utensils,
       description: "Espacios especiales para celebraciones familiares",
-      count: "75+ espacios",
+      count: "Espacios disponibles",
       color: "text-orange-500"
     },
     {
       name: "Sesiones Fotográficas",
       icon: Camera,
       description: "Estudios y locaciones únicas en el Eje Cafetero",
-      count: "35+ espacios",
+      count: "Espacios disponibles",
       color: "text-indigo-500"
     }
   ];
