@@ -47,7 +47,7 @@ const MfaSetupPage = () => {
   const handleBack = () => {
     // Go back to profile or dashboard based on user role
     if (user?.role === 'owner') {
-      navigate('/owner/dashboard');
+      navigate('/dashboard');
     } else if (user?.role === 'superadmin') {
       navigate('/superadmin/dashboard');
     } else {

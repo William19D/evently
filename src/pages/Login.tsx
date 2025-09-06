@@ -107,7 +107,7 @@ const Login = () => {
             if (user?.role === 'superadmin') {
               navigate('/superadmin/dashboard');
             } else if (user?.role === 'owner') {
-              navigate('/owner/dashboard');
+              navigate('/dashboard');
             } else {
               navigate('/');
             }

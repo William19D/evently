@@ -12,7 +12,6 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
 import { Badge } from '../components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { 
   Building2, 
   Users, 
@@ -326,19 +325,8 @@ const PublishSpace = () => {
   ];
 
   const spaceTypes = [
-    { value: "salon_eventos", label: "Salón de eventos" },
-    { value: "auditorio", label: "Auditorio" },
-    { value: "salon_conferencias", label: "Salón de conferencias" },
-    { value: "terraza", label: "Terraza" },
-    { value: "salon_banquetes", label: "Salón de banquetes" },
-    { value: "espacio_coworking", label: "Espacio de coworking" },
-    { value: "galeria_arte", label: "Galería de arte" },
-    { value: "estudio_fotografia", label: "Estudio de fotografía" },
-    { value: "salon_fiestas", label: "Salón de fiestas" },
-    { value: "jardin_eventos", label: "Jardín de eventos" },
-    { value: "rooftop", label: "Rooftop" },
-    { value: "salon_corporativo", label: "Salón corporativo" },
-    { value: "otro", label: "Otro" }
+    "Salón de eventos", "Auditorio", "Sala de conferencias", "Terraza",
+    "Jardín", "Galería", "Estudio", "Rooftop", "Salón social", "Otro"
   ];
 
   return (
@@ -383,21 +371,19 @@ const PublishSpace = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="spaceType">Tipo de Espacio *</Label>
-                      <Select
+                      <select
+                        id="spaceType"
                         value={formData.spaceType}
-                        onValueChange={(value) => handleInputChange('spaceType', value)}
+                        onChange={(e) => handleInputChange('spaceType', e.target.value)}
+                        className={`flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
+                          errors.spaceType ? 'border-red-500' : ''
+                        }`}
                       >
-                        <SelectTrigger className={errors.spaceType ? 'border-red-500' : ''}>
-                          <SelectValue placeholder="Selecciona el tipo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {spaceTypes.map((type) => (
-                            <SelectItem key={type.value} value={type.value}>
-                              {type.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                        <option value="">Selecciona el tipo</option>
+                        {spaceTypes.map((type) => (
+                          <option key={type} value={type}>{type}</option>
+                        ))}
+                      </select>
                       {errors.spaceType && (
                         <p className="text-sm text-red-500">{errors.spaceType}</p>
                       )}

@@ -71,7 +71,7 @@ const OwnerLogin = () => {
           
           // Redirect to owner dashboard after a short delay to ensure context is updated
           setTimeout(() => {
-            navigate('/owner/dashboard');
+            navigate('/dashboard');
           }, 100);
         }
       } else {
@@ -120,7 +120,7 @@ const OwnerLogin = () => {
     });
     
     // Navigate to owner dashboard
-    navigate('/owner/dashboard');
+    navigate('/dashboard');
   };
 
   const handleMfaCancel = () => {

@@ -11,6 +11,7 @@ import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Chrome, Al
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { authClient } from "@/lib/authClient";
+import { getDisplayError } from "@/utils/errorMessages";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientRegister = () => {
@@ -131,13 +132,23 @@ const ClientRegister = () => {
         setShowEmailSent(true);
         setErrors({});
       } else {
+        // Extraer mensaje específico del servidor si existe
+        const errorMessage = getDisplayError(result);
+        console.log('📢 User-friendly registration error:', errorMessage);
+        
         setErrors({
-          general: "Error al crear la cuenta. Inténtalo de nuevo."
+          general: errorMessage
         });
       }
     } catch (error: any) {
+      console.error('❌ Registration exception:', error);
+      
+      // Usar el sistema de manejo de errores user-friendly
+      const errorMessage = getDisplayError(error);
+      console.log('📢 User-friendly registration exception:', errorMessage);
+      
       setErrors({
-        general: error.message || "Error de conexión. Inténtalo de nuevo."
+        general: errorMessage
       });
     } finally {
       setIsLoading(false);

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, User, Menu, Calendar, MapPin, ChevronDown, Building2, LogOut, Shield, Settings } from "lucide-react";
+import { Search, User, Menu, Calendar, MapPin, ChevronDown, Building2, LogOut, Shield, Settings, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -153,16 +153,53 @@ const Navigation = () => {
               </>
             ) : (
               <>
-                <Link to="/login-selection">
-                  <Button variant="ghost" size="sm">
-                    Iniciar Sesión
-                  </Button>
-                </Link>
-                <Link to="/register-selection">
-                  <Button size="sm">
-                    Registrarse
-                  </Button>
-                </Link>
+                {/* Login Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center space-x-1">
+                      <span>Iniciar Sesión</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/login/client" className="flex items-center">
+                        <Users className="w-4 h-4 mr-2" />
+                        Como Cliente
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/login/owner" className="flex items-center">
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Como Propietario
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
+                {/* Register Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button size="sm" className="flex items-center space-x-1">
+                      <span>Registrarse</span>
+                      <ChevronDown className="w-4 h-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem asChild>
+                      <Link to="/register/client" className="flex items-center">
+                        <Users className="w-4 h-4 mr-2" />
+                        Como Cliente
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/register/owner" className="flex items-center">
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Como Propietario
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
 
@@ -245,20 +282,49 @@ const Navigation = () => {
 
               {!user && (
                 <>
-                  <Link
-                    to="/login-selection"
-                    className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Iniciar Sesión
-                  </Link>
-                  <Link
-                    to="/register-selection"
-                    className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Registrarse
-                  </Link>
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Iniciar Sesión</p>
+                    <div className="space-y-1 ml-4">
+                      <Link
+                        to="/login/client"
+                        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Como Cliente
+                      </Link>
+                      <Link
+                        to="/login/owner"
+                        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Como Propietario
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="px-3 py-2">
+                    <p className="text-sm font-medium text-muted-foreground mb-2">Registrarse</p>
+                    <div className="space-y-1 ml-4">
+                      <Link
+                        to="/register/client"
+                        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Como Cliente
+                      </Link>
+                      <Link
+                        to="/register/owner"
+                        className="flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors"
+                        onClick={() => setIsMenuOpen(false)}
+                      >
+                        <Building2 className="w-4 h-4 mr-2" />
+                        Como Propietario
+                      </Link>
+                    </div>
+                  </div>
                 </>
               )}
             </div>

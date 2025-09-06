@@ -626,6 +626,13 @@ class AuthClient {
   isAuthenticated(): boolean {
     return !!(this.accessToken && this.user);
   }
+
+  getStoredTokens(): { access_token: string | null; refresh_token: string | null } {
+    return {
+      access_token: this.accessToken,
+      refresh_token: this.refreshToken
+    };
+  }
 }
 
 export const authClient = new AuthClient();

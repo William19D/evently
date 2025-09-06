@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authClient, type AuthUser, type TOTPSetupResponse, type TOTPVerifyResponse, type TOTPStatusResponse, type TOTPBackupCodesResponse } from '@/lib/authClient';
 import { logAuthStep, logAuthError } from '@/lib/authDebug';
+import { getDisplayError } from '@/utils/errorMessages';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -70,12 +72,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         logAuthStep('SETUP_MFA_SUCCESS', { userId: user.id });
       } else {
         logAuthError('SETUP_MFA_FAILED', { error: result.error });
+        
+        // Usar el sistema de manejo de errores user-friendly
+        const friendlyError = getDisplayError(result.error);
+        console.log('📢 User-friendly MFA setup error:', friendlyError);
+        
+        // Mostrar el error al usuario
+        toast.error('Error en configuración MFA', {
+          description: friendlyError
+        });
       }
 
       return result;
     } catch (error) {
       logAuthError('SETUP_MFA_ERROR', error);
-      return { error: 'Error configurando MFA' };
+      
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyError = getDisplayError(error);
+      console.log('📢 User-friendly MFA setup catch error:', friendlyError);
+      
+      // Mostrar el error al usuario
+      toast.error('Error inesperado', {
+        description: friendlyError
+      });
+      
+      return { error: friendlyError };
     }
   };
 
@@ -94,12 +115,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setIsMfaEnabled(true);
       } else {
         logAuthError('VERIFY_MFA_SETUP_FAILED', { error: result.error });
+        
+        // Usar el sistema de manejo de errores user-friendly
+        const friendlyError = getDisplayError(result.error);
+        console.log('📢 User-friendly MFA setup verification error:', friendlyError);
+        
+        // Mostrar el error al usuario
+        toast.error('Error en verificación MFA', {
+          description: friendlyError
+        });
       }
 
       return result;
     } catch (error) {
       logAuthError('VERIFY_MFA_SETUP_ERROR', error);
-      return { error: 'Error verificando configuración MFA' };
+      
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyError = getDisplayError(error);
+      console.log('📢 User-friendly MFA setup verification exception:', friendlyError);
+      
+      // Mostrar el error al usuario
+      toast.error('Error inesperado', {
+        description: friendlyError
+      });
+      
+      return { error: friendlyError };
     }
   };
 
@@ -166,13 +206,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         logAuthError('VERIFY_MFA_LOGIN_FAILED', { error: result.error });
         console.log('❌ MFA verification failed:', result.error);
+        
+        // Usar el sistema de manejo de errores user-friendly
+        const friendlyError = getDisplayError(result.error);
+        console.log('📢 User-friendly MFA error:', friendlyError);
+        
+        // Mostrar el error al usuario
+        toast.error('Error en verificación MFA', {
+          description: friendlyError
+        });
       }
 
       return result;
     } catch (error) {
       logAuthError('VERIFY_MFA_LOGIN_ERROR', error);
       console.error('❌ Exception in verifyMFALogin:', error);
-      return { error: 'Error verificando MFA para login' };
+      
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyError = getDisplayError(error);
+      console.log('📢 User-friendly MFA exception error:', friendlyError);
+      
+      // Mostrar el error al usuario
+      toast.error('Error inesperado', {
+        description: friendlyError
+      });
+      
+      return { error: friendlyError };
     }
   };
 
@@ -388,7 +447,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return { success: false, error: 'Estado de login inesperado' };
     } catch (error: any) {
       console.error('❌ Sign in error with enhanced MFA flag system:', error);
-      return { success: false, error: error.message || 'Error de login' };
+      
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyError = getDisplayError(error);
+      console.log('📢 User-friendly sign in error:', friendlyError);
+      
+      // Mostrar el error al usuario
+      toast.error('Error en inicio de sesión', {
+        description: friendlyError
+      });
+      
+      return { success: false, error: friendlyError };
     } finally {
       setIsLoading(false);
     }
@@ -418,12 +487,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await authClient.verifyEmail({ email, verificationCode: code });
       
       if (result.error) {
-        return { success: false, error: result.error };
+        // Usar el sistema de manejo de errores user-friendly
+        const friendlyError = getDisplayError(result.error);
+        console.log('📢 User-friendly email verification error:', friendlyError);
+        
+        // Mostrar el error al usuario
+        toast.error('Error en verificación de email', {
+          description: friendlyError
+        });
+        
+        return { success: false, error: friendlyError };
       }
       
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message || "Error verifying email" };
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyError = getDisplayError(error);
+      console.log('📢 User-friendly email verification exception:', friendlyError);
+      
+      // Mostrar el error al usuario
+      toast.error('Error inesperado', {
+        description: friendlyError
+      });
+      
+      return { success: false, error: friendlyError };
     }
   };
 
@@ -432,12 +519,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await authClient.resendVerification({ email });
       
       if (result.error) {
-        return { success: false, error: result.error };
+        // Usar el sistema de manejo de errores user-friendly
+        const friendlyError = getDisplayError(result.error);
+        console.log('📢 User-friendly resend verification error:', friendlyError);
+        
+        // Mostrar el error al usuario
+        toast.error('Error al reenviar verificación', {
+          description: friendlyError
+        });
+        
+        return { success: false, error: friendlyError };
       }
       
       return { success: true };
     } catch (error: any) {
-      return { success: false, error: error.message || "Error resending verification" };
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyError = getDisplayError(error);
+      console.log('📢 User-friendly resend verification exception:', friendlyError);
+      
+      // Mostrar el error al usuario
+      toast.error('Error inesperado', {
+        description: friendlyError
+      });
+      
+      return { success: false, error: friendlyError };
     }
   };
 

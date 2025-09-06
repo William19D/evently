@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { getDisplayError } from "@/utils/errorMessages";
 import MfaLogin from "@/components/MfaLogin";
 import authBackground from "@/assets/auth-background.jpg";
 
@@ -101,18 +102,16 @@ const ClientLogin = () => {
       if (result.error) {
         console.log('❌ ClientLogin: Login error:', result.error);
         
-        if (result.error.includes("Invalid login credentials") || result.error.includes("Credenciales inválidas")) {
-          setErrors({ general: "Correo electrónico o contraseña incorrectos" });
-        } else if (result.error.includes("Email not confirmed") || result.error.includes("verificar tu email")) {
-          setErrors({ general: "Por favor confirma tu email antes de iniciar sesión" });
-        } else {
-          setErrors({ general: result.error });
-        }
+        // Usar el sistema de manejo de errores user-friendly
+        const errorMessage = getDisplayError(result.error || result);
+        console.log('📢 User-friendly login error:', errorMessage);
+        
+        setErrors({ general: errorMessage });
         
         toast({
           variant: "destructive",
           title: "Error",
-          description: result.error,
+          description: errorMessage,
         });
         setIsLoading(false);
         return;
@@ -124,15 +123,20 @@ const ClientLogin = () => {
       
     } catch (error) {
       console.error('❌ ClientLogin: Exception during login:', error);
-      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
       
-      setErrors({ general: "Error de conexión. Intenta nuevamente." });
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyErrorMessage = getDisplayError(error);
+      console.log('📢 User-friendly login exception:', friendlyErrorMessage);
+      
+      setErrors({ general: friendlyErrorMessage });
       
       toast({
         variant: "destructive",
         title: "Error",
-        description: errorMessage,
+        description: friendlyErrorMessage,
       });
+      
+      setIsLoading(false);
     } finally {
       setIsLoading(false);
     }

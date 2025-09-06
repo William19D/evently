@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, AlertCircle, Building2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { authClient } from "@/lib/authClient";
+import { getDisplayError } from "@/utils/errorMessages";
 import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerRegister = () => {
@@ -108,13 +109,23 @@ const OwnerRegister = () => {
           description: "Revisa tu email para confirmar tu cuenta.",
         });
       } else {
+        // Extraer mensaje específico del servidor si existe
+        const errorMessage = getDisplayError(result);
+        console.log('📢 User-friendly owner registration error:', errorMessage);
+        
         setErrors({
-          general: "Error al crear la cuenta. Inténtalo de nuevo."
+          general: errorMessage
         });
       }
     } catch (error: any) {
+      console.error('❌ Owner registration exception:', error);
+      
+      // Usar el sistema de manejo de errores user-friendly
+      const errorMessage = getDisplayError(error);
+      console.log('📢 User-friendly owner registration exception:', errorMessage);
+      
       setErrors({
-        general: error.message || "Error de conexión. Inténtalo de nuevo."
+        general: errorMessage
       });
     } finally {
       setIsLoading(false);
