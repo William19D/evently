@@ -26,6 +26,8 @@ import TwoFactorAuth from "./pages/TwoFactorAuth";
 import MfaSetup from "./pages/MfaSetup";
 import UserProfile from "./pages/UserProfile";
 import MfaDebug from "./components/MfaDebug";
+import MfaVerification from "./pages/MfaVerification";
+import ProtectedRoute from "./components/ProtectedRoute";
 import NotFound from "./pages/NotFound";
 import SuperadminLogin from "./pages/SuperadminLogin";
 import SuperadminDashboard from "./pages/SuperadminDashboard";
@@ -50,6 +52,7 @@ const App = () => (
               <Route path="/register/client" element={<ClientRegister />} />
               <Route path="/register/owner" element={<OwnerRegister />} />
               <Route path="/email-confirmation" element={<EmailConfirmation />} />
+              <Route path="/mfa-verification" element={<MfaVerification />} />
               
               {/* Legacy routes for backwards compatibility */}
               <Route path="/login" element={<AuthSelection />} />
@@ -58,16 +61,44 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/faq" element={<FAQ />} />
-              <Route path="/publish-space" element={<PublishSpace />} />
-              <Route path="/dashboard" element={<OwnerDashboard />} />
-              <Route path="/profile" element={<UserProfile />} />
-              <Route path="/two-factor-auth" element={<TwoFactorAuth />} />
-              <Route path="/mfa-setup" element={<MfaSetup />} />
+              <Route path="/publish-space" element={
+                <ProtectedRoute>
+                  <PublishSpace />
+                </ProtectedRoute>
+              } />
+              <Route path="/dashboard" element={
+                <ProtectedRoute>
+                  <OwnerDashboard />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <UserProfile />
+                </ProtectedRoute>
+              } />
+              <Route path="/two-factor-auth" element={
+                <ProtectedRoute>
+                  <TwoFactorAuth />
+                </ProtectedRoute>
+              } />
+              <Route path="/mfa-setup" element={
+                <ProtectedRoute>
+                  <MfaSetup />
+                </ProtectedRoute>
+              } />
               {/* Legacy 2FA route for backwards compatibility */}
-              <Route path="/2fa" element={<TwoFactorAuth />} />
+              <Route path="/2fa" element={
+                <ProtectedRoute>
+                  <TwoFactorAuth />
+                </ProtectedRoute>
+              } />
               {/* Superadmin routes - hidden URLs */}
               <Route path="/superadmin/login" element={<SuperadminLogin />} />
-              <Route path="/superadmin/dashboard" element={<SuperadminDashboard />} />
+              <Route path="/superadmin/dashboard" element={
+                <ProtectedRoute>
+                  <SuperadminDashboard />
+                </ProtectedRoute>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

@@ -15,7 +15,6 @@ import {
 import { Shield, ShieldCheck, ShieldOff, AlertCircle, QrCode, Trash2, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 
 const MfaSettings = () => {
   const [isSetupOpen, setIsSetupOpen] = useState(false);
@@ -23,39 +22,47 @@ const MfaSettings = () => {
   const [step, setStep] = useState<'qr' | 'verify'>('qr');
   const [qrCode, setQrCode] = useState<string>("");
   const [secret, setSecret] = useState<string>("");
-  const [factorId, setFactorId] = useState<string>("");
   const [verificationCode, setVerificationCode] = useState("");
   const [disableCode, setDisableCode] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [isMfaEnabled, setIsMfaEnabled] = useState(false);
   const { toast } = useToast();
   const { 
-    isMfaEnabled, 
-    enrollMfa, 
-    verifyAndEnableMfa, 
-    unenrollMfa, 
-    checkMfaStatus 
+    getMFAStatus, 
+    setupMFA, 
+    verifyMFASetup, 
+    disableMFA,
+    user
   } = useAuth();
 
   useEffect(() => {
     checkMfaStatus();
-  }, [checkMfaStatus]);
+  }, []);
+
+  const checkMfaStatus = async () => {
+    try {
+      const result = await getMFAStatus();
+      setIsMfaEnabled(result.data?.enabled || false);
+    } catch (error) {
+      console.error('Error checking MFA status:', error);
+    }
+  };
 
   const handleEnableMfa = async () => {
     setIsLoading(true);
     setError("");
 
     try {
-      const mfaData = await enrollMfa();
+      const mfaData = await setupMFA();
       
-      if (mfaData) {
-        setQrCode(mfaData.qrCode);
-        setSecret(mfaData.secret);
-        setFactorId(mfaData.factorId);
+      if (mfaData.success && mfaData.data) {
+        setQrCode(mfaData.data.qrCodeURL || '');
+        setSecret(mfaData.data.secret || '');
         setStep('qr');
         setIsSetupOpen(true);
       } else {
-        setError("No se pudo inicializar la configuración de MFA.");
+        setError(mfaData.error || "No se pudo inicializar la configuración de MFA.");
       }
     } catch (error) {
       setError("Error al configurar MFA.");
@@ -74,9 +81,9 @@ const MfaSettings = () => {
     setError("");
 
     try {
-      const success = await verifyAndEnableMfa(verificationCode, factorId);
+      const result = await verifyMFASetup(verificationCode);
       
-      if (success) {
+      if (result.success) {
         toast({
           title: "¡MFA Activado!",
           description: "Tu cuenta ahora está protegida con autenticación de dos factores.",
@@ -86,7 +93,7 @@ const MfaSettings = () => {
         setStep('qr');
         await checkMfaStatus();
       } else {
-        setError("Código incorrecto. Verifica el código generado por tu aplicación autenticadora.");
+        setError(result.error || "Código incorrecto. Verifica el código generado por tu aplicación autenticadora.");
         setVerificationCode("");
       }
     } catch (error) {
@@ -107,47 +114,9 @@ const MfaSettings = () => {
     setError("");
 
     try {
-      // First verify the code by creating a challenge
-      const { data: factorsData } = await supabase.auth.mfa.listFactors();
-      const totpFactor = factorsData?.totp?.find(factor => factor.status === 'verified');
+      const result = await disableMFA(disableCode);
       
-      if (!totpFactor) {
-        setError("No se encontró factor MFA verificado.");
-        setDisableCode("");
-        setIsLoading(false);
-        return;
-      }
-
-      // Create challenge to verify the code
-      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({
-        factorId: totpFactor.id
-      });
-
-      if (challengeError) {
-        setError("Error al crear verificación. Inténtalo de nuevo.");
-        setDisableCode("");
-        setIsLoading(false);
-        return;
-      }
-
-      // Verify the code
-      const { error: verifyError } = await supabase.auth.mfa.verify({
-        factorId: totpFactor.id,
-        challengeId: challengeData.id,
-        code: disableCode
-      });
-
-      if (verifyError) {
-        setError("Código incorrecto. Verifica el código de tu app autenticadora.");
-        setDisableCode("");
-        setIsLoading(false);
-        return;
-      }
-
-      // If verification successful, unenroll the factor
-      const success = await unenrollMfa(totpFactor.id);
-      
-      if (success) {
+      if (result.success) {
         toast({
           title: "MFA Desactivado",
           description: "La autenticación de dos factores ha sido desactivada.",
@@ -156,7 +125,7 @@ const MfaSettings = () => {
         setDisableCode("");
         await checkMfaStatus();
       } else {
-        setError("No se pudo desactivar MFA. Inténtalo de nuevo.");
+        setError(result.error || "No se pudo desactivar MFA. Inténtalo de nuevo.");
         setDisableCode("");
       }
     } catch (error) {

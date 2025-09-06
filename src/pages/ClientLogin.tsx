@@ -9,6 +9,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import MfaLogin from "@/components/MfaLogin";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientLogin = () => {
@@ -16,10 +17,19 @@ const ClientLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showMfaDialog, setShowMfaDialog] = useState(false);
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user, signIn, signInWithMfa } = useAuth();
+  const { user, signIn } = useAuth();
+
+  // 🔍 Debug state changes
+  useEffect(() => {
+    console.log('🔍 ClientLogin: showMfaDialog state changed:', { 
+      showMfaDialog, 
+      timestamp: new Date().toLocaleTimeString() 
+    });
+  }, [showMfaDialog]);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -59,56 +69,87 @@ const ClientLogin = () => {
     setIsLoading(true);
     
     try {
-      const result = await signInWithMfa(email, password);
+      console.log('🔄 ClientLogin: Starting login process...');
+      const result = await signIn(email, password);
       
-      if (result.error) {
-        // Manejo específico para error de email no verificado
-        if (result.error.includes('verificar tu email')) {
-          setErrors({
-            general: result.error
-          });
-          // Mostrar opción para reenviar verificación
-          setTimeout(() => {
-            if (window.confirm('¿Quieres que te reenviemos el código de verificación?')) {
-              navigate("/verify-email", {
-                state: {
-                  email: email,
-                  role: 'member',
-                  fromLogin: true
-                }
-              });
-            }
-          }, 2000);
-        } else {
-          setErrors({
-            general: result.error.includes('Invalid') || result.error.includes('inválidas') 
-              ? "Credenciales incorrectas. Verifica tu email y contraseña." 
-              : result.error
-          });
-        }
-      } else if (result.requiresMfa && result.mfaData) {
-        // Usuario con MFA habilitado - pedir código de verificación
-        navigate("/two-factor-auth", {
-          state: {
-            mfaData: result.mfaData
-          }
-        });
-      } else {
-        // Login exitoso - permitir acceso sin MFA obligatorio
+      console.log('📊 ClientLogin: Login result received:', {
+        success: result.success,
+        mfaRequired: result.mfaRequired,
+        error: result.error
+      });
+      
+      // 🔐 CRITICAL: Check for MFA requirement FIRST
+      if (result.mfaRequired) {
+        console.log('🔐 ClientLogin: MFA required - redirecting to MFA verification page');
+        navigate('/mfa-verification', { replace: true });
+        return;
+      }
+
+      // ✅ Check for successful login without MFA
+      if (result.success && !result.mfaRequired) {
+        console.log('✅ ClientLogin: Login successful without MFA');
         toast({
           title: "¡Bienvenido Cliente!",
           description: "Has iniciado sesión correctamente.",
         });
         navigate("/");
+        setIsLoading(false);
+        return;
       }
+
+      // ❌ Handle errors
+      if (result.error) {
+        console.log('❌ ClientLogin: Login error:', result.error);
+        
+        if (result.error.includes("Invalid login credentials") || result.error.includes("Credenciales inválidas")) {
+          setErrors({ general: "Correo electrónico o contraseña incorrectos" });
+        } else if (result.error.includes("Email not confirmed") || result.error.includes("verificar tu email")) {
+          setErrors({ general: "Por favor confirma tu email antes de iniciar sesión" });
+        } else {
+          setErrors({ general: result.error });
+        }
+        
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: result.error,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // 🤔 Unexpected state
+      console.warn('⚠️ ClientLogin: Unexpected login state:', result);
+      setErrors({ general: "Estado de login inesperado. Intenta nuevamente." });
+      
     } catch (error) {
-      console.error('Login error:', error);
-      setErrors({
-        general: "Error de conexión. Inténtalo de nuevo."
+      console.error('❌ ClientLogin: Exception during login:', error);
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      
+      setErrors({ general: "Error de conexión. Intenta nuevamente." });
+      
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleMfaSuccess = () => {
+    setShowMfaDialog(false);
+    toast({
+      title: "¡Bienvenido Cliente!",
+      description: "Has iniciado sesión correctamente.",
+    });
+    navigate("/");
+  };
+
+  const handleMfaCancel = () => {
+    setShowMfaDialog(false);
+    setIsLoading(false);
   };
 
   return (
@@ -244,6 +285,12 @@ const ClientLogin = () => {
         </Card>
         </div>
       </div>
+      
+      <MfaLogin
+        isOpen={showMfaDialog}
+        onMfaSuccess={handleMfaSuccess}
+        onCancel={handleMfaCancel}
+      />
     </div>
   );
 };

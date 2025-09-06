@@ -6,8 +6,6 @@ interface AuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isMfaEnabled: boolean;
-  // Estado del flujo MFA
-  isMfaPending: boolean;
   signIn: (email: string, password: string) => Promise<{ success: boolean; mfaRequired?: boolean; error?: string }>;
   signOut: () => Promise<void>;
   // TOTP MFA functions
@@ -21,8 +19,6 @@ interface AuthContextType {
   // Email verification functions
   verifyEmail: (email: string, code: string) => Promise<{ success: boolean; error?: string }>;
   resendVerification: (email: string) => Promise<{ success: boolean; error?: string }>;
-  // Helper para verificar si el usuario está completamente autenticado
-  isFullyAuthenticated: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,30 +26,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [tempMfaToken, setTempMfaToken] = useState<string | null>(null);
   const [isMfaEnabled, setIsMfaEnabled] = useState(false);
-
-  // 🔧 Estado para tracking del flujo MFA
-  const isMfaPending = !!tempMfaToken && !!user && !authClient.isAuthenticated();
-
-  // 🔧 Helper para verificar autenticación completa
-  const isFullyAuthenticated = (): boolean => {
-    const hasUser = !!user;
-    const hasTokens = authClient.isAuthenticated();
-    const notPendingMfa = !tempMfaToken;
-    
-    const isFullyAuth = hasUser && hasTokens && notPendingMfa;
-    
-    console.log('🔍 Authentication status check:', {
-      hasUser,
-      hasTokens,
-      notPendingMfa,
-      isMfaPending,
-      isFullyAuth
-    });
-    
-    return isFullyAuth;
-  };
 
   // TOTP MFA functions
   const setupMFA = async (): Promise<TOTPSetupResponse> => {
@@ -105,73 +78,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyMFALogin = async (code?: string, backupCode?: string): Promise<TOTPVerifyResponse> => {
     try {
-      if (!tempMfaToken) {
-        return { error: 'Token temporal de MFA no encontrado. Inicia sesión nuevamente.' };
+      if (!user) {
+        return { error: 'Usuario no autenticado' };
       }
 
-      logAuthStep('VERIFY_MFA_LOGIN_START', { 
-        hasTempToken: !!tempMfaToken,
-        hasCode: !!code,
-        hasBackupCode: !!backupCode
-      });
+      logAuthStep('VERIFY_MFA_LOGIN_START', { userId: user.id });
 
-      const result = await authClient.verifyMFALogin(tempMfaToken, code, backupCode);
-      
-      console.log('🔍 AuthContext verifyMFALogin result:', {
-        success: result.success,
-        hasData: !!result.data,
-        method: result.data?.method,
-        error: result.error
-      });
+      const result = await authClient.verifyMFALogin(user.id, code, backupCode);
       
       if (result.success) {
-        // 🎉 VERIFICACIÓN MFA EXITOSA - COMPLETAR LOGIN
-        console.log('🎉 MFA verification successful - completing login process');
-        
-        // Limpiar el token temporal después de verificación exitosa
-        setTempMfaToken(null);
-        
-        // Obtener el usuario actualizado después de login exitoso con tokens completos
-        const currentUser = authClient.getCurrentUser();
-        if (currentUser) {
-          console.log('👤 Updating user data after successful MFA verification');
-          setUser(currentUser);
-          setIsMfaEnabled(true); // MFA está habilitado si llegamos aquí
-        } else {
-          console.error('⚠️ No user data available after MFA verification');
-          return { error: 'Error obteniendo datos del usuario después de MFA' };
-        }
-        
-        logAuthStep('VERIFY_MFA_LOGIN_SUCCESS', { 
-          method: result.data?.method,
-          userUpdated: !!currentUser,
-          loginCompleted: true
-        });
-        
-        // Verificar que los tokens se guardaron correctamente
-        const hasAccessToken = !!authClient.getAccessToken();
-        const hasRefreshToken = !!authClient.getRefreshToken();
-        
-        console.log('🔐 Post-MFA token status:', {
-          hasAccessToken,
-          hasRefreshToken,
-          userAuthenticated: authClient.isAuthenticated()
-        });
-        
-        if (!hasAccessToken || !hasRefreshToken) {
-          console.error('⚠️ Missing tokens after MFA verification');
-          return { error: 'Error en autenticación post-MFA - tokens faltantes' };
-        }
-        
+        logAuthStep('VERIFY_MFA_LOGIN_SUCCESS', { userId: user.id });
       } else {
         logAuthError('VERIFY_MFA_LOGIN_FAILED', { error: result.error });
-        console.log('❌ MFA verification failed:', result.error);
       }
 
       return result;
     } catch (error) {
       logAuthError('VERIFY_MFA_LOGIN_ERROR', error);
-      console.error('❌ Exception in verifyMFALogin:', error);
       return { error: 'Error verificando MFA para login' };
     }
   };
@@ -272,28 +195,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initializeAuth = async () => {
       try {
-        const currentUser = authClient.getCurrentUser();
+        const sessionData = await authClient.getCurrentUser();
         
-        if (currentUser) {
-          setUser(currentUser);
+        if (sessionData.user && !sessionData.error) {
+          setUser({
+            id: sessionData.user.id,
+            email: sessionData.user.email || '',
+            name: sessionData.user.user_metadata?.name || sessionData.user.user_metadata?.full_name || '',
+            role: sessionData.user.user_metadata?.role || 'member'
+          });
           
-          // Con el nuevo sistema de banderas, verificar MFA status del usuario actual
-          try {
-            const mfaStatus = await getMFAStatus();
-            if (mfaStatus.success && mfaStatus.data) {
-              setIsMfaEnabled(mfaStatus.data.enabled || false);
-              console.log('🔧 MFA status initialized with flag system:', {
-                userId: currentUser.id.substring(0, 8) + '***',
-                mfaEnabled: mfaStatus.data.enabled
-              });
-            }
-          } catch (mfaError) {
-            console.warn('⚠️ Could not check MFA status during initialization:', mfaError);
-            // No bloquear la inicialización si falla la verificación MFA
-          }
+          await checkMfaStatus();
         }
       } catch (error) {
-        console.error('❌ Error initializing auth with flag system:', error);
+        console.error('Error initializing auth:', error);
       } finally {
         setIsLoading(false);
       }
@@ -305,90 +220,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = async (email: string, password: string): Promise<{ success: boolean; mfaRequired?: boolean; error?: string }> => {
     try {
       setIsLoading(true);
-      
-      // Limpiar cualquier token temporal previo
-      setTempMfaToken(null);
-      
       const response = await authClient.signIn(email, password);
       
-      // Debug logging para el sistema de banderas MFA mejorado
-      console.log('🔍 AuthContext signIn response with enhanced MFA flag system:', {
-        success: response.success,
-        requiresMFA: response.requiresMFA,
-        mfaRequired: response.mfaRequired,
-        hasTempToken: !!response.tempToken,
-        hasUser: !!response.user,
-        sessionStatus: response.sessionStatus,
-        message: response.message,
-        nextStep: response.nextStep,
-        error: response.error
-      });
-      
-      // 🚨 VERIFICACIÓN CRÍTICA: Si hay MFA requerido, NO permitir acceso hasta verificación
-      if (response.requiresMFA || response.mfaRequired) {
-        console.log('🔐 MFA REQUIRED - User MUST complete 6-digit verification before access');
-        
-        // Validar que tenemos todo lo necesario para el flujo MFA
-        if (!response.tempToken) {
-          console.error('❌ MFA required but no tempToken provided');
-          return { success: false, error: 'Error en configuración MFA - token temporal faltante' };
-        }
-        
-        if (!response.user) {
-          console.error('❌ MFA required but no user data provided');
-          return { success: false, error: 'Error en configuración MFA - datos de usuario faltantes' };
-        }
-        
-        // Verificar que el estado sea correcto
-        if (response.sessionStatus?.loginStep !== 'mfa_pending') {
-          console.warn('⚠️ Expected loginStep to be mfa_pending, got:', response.sessionStatus?.loginStep);
-        }
-        
-        console.log('� Storing MFA session data for verification flow');
-        
-        // Almacenar el token temporal para verificación MFA
-        setTempMfaToken(response.tempToken);
-        
-        // Establecer datos del usuario para el flujo MFA (pero sin autenticar completamente)
-        setUser(response.user);
-        setIsMfaEnabled(true);
-        
-        console.log('🔄 AuthContext returning MFA required - blocking access until 6-digit verification');
-        return { 
-          success: false, // ¡IMPORTANTE! success=false porque no está completo hasta MFA
-          mfaRequired: true 
-        };
-      }
-      
-      // Error en el login
       if (response.error) {
-        console.log('❌ Login error:', response.error);
         return { success: false, error: response.error };
       }
 
-      // Login exitoso sin MFA (usuario no tiene MFA habilitado)
-      if (response.success && response.user) {
-        console.log('✅ Login successful without MFA - complete access granted');
+      if (response.user) {
         setUser(response.user);
         
-        // Actualizar estado MFA basado en sessionStatus
-        if (response.sessionStatus) {
-          setIsMfaEnabled(response.sessionStatus.mfaRequired || false);
-          
-          // Verificar que el login_step sea 'completed'
-          if (response.sessionStatus.loginStep !== 'completed') {
-            console.warn('⚠️ Unexpected loginStep for non-MFA user:', response.sessionStatus.loginStep);
-          }
+        if (response.mfaRequired) {
+          return { success: true, mfaRequired: true };
         }
         
+        await checkMfaStatus();
         return { success: true };
       }
 
-      console.log('⚠️ Unexpected login state - neither MFA nor complete success');
-      return { success: false, error: 'Estado de login inesperado' };
+      return { success: false, error: 'Unknown error occurred' };
     } catch (error: any) {
-      console.error('❌ Sign in error with enhanced MFA flag system:', error);
-      return { success: false, error: error.message || 'Error de login' };
+      console.error('Sign in error:', error);
+      return { success: false, error: error.message || 'Login failed' };
     } finally {
       setIsLoading(false);
     }
@@ -398,15 +250,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       await authClient.signOut();
-      
-      // Limpiar todo el estado relacionado con autenticación y MFA
       setUser(null);
       setIsMfaEnabled(false);
-      setTempMfaToken(null);
-      
-      console.log('✅ Sign out completed with flag system cleanup');
     } catch (error) {
-      console.error('❌ Sign out error with flag system:', error);
+      console.error('Sign out error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -445,7 +292,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     isLoading,
     isMfaEnabled,
-    isMfaPending,
     signIn,
     signOut,
     checkMfaStatus,
@@ -458,9 +304,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     generateBackupCodes,
     // Email verification functions
     verifyEmail,
-    resendVerification,
-    // Helper function
-    isFullyAuthenticated
+    resendVerification
   };
 
   return (

@@ -10,7 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { User, Mail, Phone, MapPin, Calendar, Shield, LogOut, ArrowLeft, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import MfaSettings from "@/components/MfaSettings";
+import MfaSetup from "@/components/MfaSetup";
 
 const UserProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -218,7 +218,7 @@ const UserProfile = () => {
             </Card>
 
             {/* MFA Settings */}
-            <MfaSettings />
+            <MfaSetup />
 
             {/* Account Actions */}
             <Card>

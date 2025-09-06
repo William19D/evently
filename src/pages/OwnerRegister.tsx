@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Eye, EyeOff, Mail, Lock, User, Phone, ArrowLeft, AlertCircle, Building2, MapPin, CheckCircle } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, AlertCircle, Building2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { authClient } from "@/lib/authClient";
 import authBackground from "@/assets/auth-background.jpg";
@@ -19,10 +18,6 @@ const OwnerRegister = () => {
     firstName: "",
     lastName: "",
     email: "",
-    phone: "",
-    businessName: "",
-    businessAddress: "",
-    businessDescription: "",
     password: "",
     confirmPassword: "",
     acceptTerms: false
@@ -48,26 +43,6 @@ const OwnerRegister = () => {
       newErrors.email = "El correo electrónico es requerido";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Ingresa un correo electrónico válido";
-    }
-    
-    if (!formData.phone.trim()) {
-      newErrors.phone = "El teléfono es requerido";
-    } else if (!/^\d{10}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = "Ingresa un número de teléfono válido (10 dígitos)";
-    }
-
-    if (!formData.businessName.trim()) {
-      newErrors.businessName = "El nombre del negocio es requerido";
-    }
-
-    if (!formData.businessAddress.trim()) {
-      newErrors.businessAddress = "La dirección es requerida";
-    }
-
-    if (!formData.businessDescription.trim()) {
-      newErrors.businessDescription = "La descripción del negocio es requerida";
-    } else if (formData.businessDescription.length < 50) {
-      newErrors.businessDescription = "La descripción debe tener al menos 50 caracteres";
     }
     
     if (!formData.password) {
@@ -158,8 +133,8 @@ const OwnerRegister = () => {
         <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-indigo-400/10"></div>
         <div className="absolute inset-0 flex items-center justify-center p-12">
           <div className="text-center text-white max-w-md">
-            <h2 className="text-3xl font-bold mb-4">Haz crecer tu negocio</h2>
-            <p className="text-lg text-white/90">Registra tu negocio y comparte tus espacios con miles de clientes</p>
+            <h2 className="text-3xl font-bold mb-4">Únete como Propietario</h2>
+            <p className="text-lg text-white/90">Registra tu cuenta y comienza a gestionar espacios y eventos</p>
           </div>
         </div>
       </div>
@@ -182,7 +157,8 @@ const OwnerRegister = () => {
               <div className="space-y-3">
                 <h3 className="text-xl font-semibold text-green-800">¡Registro Exitoso!</h3>
                 <p className="text-muted-foreground">
-                  Te has registrado como <strong>Propietario</strong> en Evently
+                  Te has registrado como <strong>Propietario</strong> en Evently.<br />
+                  Podrás gestionar espacios y eventos en la plataforma.
                 </p>
               </div>
 
@@ -197,10 +173,10 @@ const OwnerRegister = () => {
               <div className="space-y-3 text-sm text-muted-foreground">
                 <p>🎉 <strong>¿Qué puedes hacer después de confirmar?</strong></p>
                 <ul className="space-y-1 text-left">
-                  <li>• Crear y gestionar tus espacios</li>
-                  <li>• Publicar eventos exclusivos</li>
+                  <li>• Publicar y gestionar espacios</li>
+                  <li>• Crear eventos exclusivos</li>
                   <li>• Acceder a herramientas de propietario</li>
-                  <li>• Conectar con clientes</li>
+                  <li>• Recibir reservas de clientes</li>
                 </ul>
               </div>
 
@@ -225,7 +201,7 @@ const OwnerRegister = () => {
             </div>
             <CardTitle className="text-2xl font-semibold">Registro - Propietario</CardTitle>
             <CardDescription>
-              Crea tu cuenta para publicar espacios
+              Crea tu cuenta para gestionar espacios y eventos
             </CardDescription>
           </CardHeader>
 
@@ -297,81 +273,6 @@ const OwnerRegister = () => {
                 </div>
                 {errors.email && (
                   <p className="text-sm text-destructive">{errors.email}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Teléfono</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    id="phone"
-                    type="tel"
-                    placeholder="316 789 4567"
-                    value={formData.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    className={`pl-10 transition-colors ${errors.phone ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                    required
-                  />
-                </div>
-                {errors.phone && (
-                  <p className="text-sm text-destructive">{errors.phone}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="businessName">Nombre del negocio</Label>
-                <div className="relative">
-                  <Building2 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    id="businessName"
-                    type="text"
-                    placeholder="Salón de Eventos Los Girasoles"
-                    value={formData.businessName}
-                    onChange={(e) => handleInputChange("businessName", e.target.value)}
-                    className={`pl-10 transition-colors ${errors.businessName ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                    required
-                  />
-                </div>
-                {errors.businessName && (
-                  <p className="text-sm text-destructive">{errors.businessName}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="businessAddress">Dirección del negocio</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    id="businessAddress"
-                    type="text"
-                    placeholder="Calle 15 #25-30, Armenia, Quindío"
-                    value={formData.businessAddress}
-                    onChange={(e) => handleInputChange("businessAddress", e.target.value)}
-                    className={`pl-10 transition-colors ${errors.businessAddress ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                    required
-                  />
-                </div>
-                {errors.businessAddress && (
-                  <p className="text-sm text-destructive">{errors.businessAddress}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="businessDescription">Descripción del negocio</Label>
-                <Textarea
-                  id="businessDescription"
-                  placeholder="Describe tu negocio, los tipos de espacios que ofreces, servicios incluidos, etc."
-                  value={formData.businessDescription}
-                  onChange={(e) => handleInputChange("businessDescription", e.target.value)}
-                  className={`min-h-[100px] transition-colors ${errors.businessDescription ? 'border-destructive focus-visible:ring-destructive' : ''}`}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  {formData.businessDescription.length}/50 caracteres mínimo
-                </p>
-                {errors.businessDescription && (
-                  <p className="text-sm text-destructive">{errors.businessDescription}</p>
                 )}
               </div>
 
@@ -456,7 +357,7 @@ const OwnerRegister = () => {
                     y la{" "}
                     <Link to="/privacy" className="text-primary hover:underline transition-colors">
                       política de privacidad
-                    </Link>. También entiendo que mi cuenta será revisada antes de la activación.
+                    </Link>. Al registrarme como propietario, entiendo que podré gestionar espacios y eventos en la plataforma.
                   </label>
                 </div>
                 {errors.acceptTerms && (

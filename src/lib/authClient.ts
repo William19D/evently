@@ -1,5 +1,7 @@
 // Edge Function URL
-const AUTH_FUNCTION_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/auth';
+// Environment variables
+const AUTH_FUNCTION_URL = import.meta.env.VITE_AUTH_FUNCTION_URL || 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/auth';
+const MFA_FUNCTION_URL = import.meta.env.VITE_MFA_FUNCTION_URL || 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/mfa-totp';
 
 // Import debugging utilities
 import { logAuthStep, logAuthError, checkEnvVars } from './authDebug';
@@ -17,9 +19,20 @@ export interface AuthResponse {
   accessToken?: string;
   refreshToken?: string;
   mfaRequired?: boolean;
+  requiresMFA?: boolean;
   needsMFA?: boolean;
+  tempToken?: string;
   error?: string;
   success?: boolean;
+  sessionStatus?: {
+    loginStep: string;
+    mfaVerified: boolean;
+    mfaRequired: boolean;
+    tempTokenId?: string;
+    verifiedAt?: string;
+  };
+  message?: string;
+  nextStep?: string;
 }
 
 export interface MFAFactor {
@@ -66,6 +79,56 @@ export interface MFAVerifyResponse {
   };
   aal?: string;
   error?: string;
+}
+
+// TOTP MFA Interfaces
+export interface TOTPSetupResponse {
+  success?: boolean;
+  error?: string;
+  data?: {
+    secret?: string;
+    qrCodeURL?: string;
+    backupCodes?: string[];
+    setupComplete?: boolean;
+    enabled?: boolean;
+  };
+  message?: string;
+}
+
+export interface TOTPVerifyResponse {
+  success?: boolean;
+  error?: string;
+  data?: {
+    enabled?: boolean;
+    verified?: boolean;
+    verifiedAt?: string;
+    method?: string;
+    warning?: string;
+  };
+  message?: string;
+}
+
+export interface TOTPStatusResponse {
+  success?: boolean;
+  error?: string;
+  data?: {
+    configured?: boolean;
+    enabled?: boolean;
+    backupCodesCount?: number;
+    lastUpdated?: string;
+  };
+  message?: string;
+}
+
+export interface TOTPBackupCodesResponse {
+  success?: boolean;
+  error?: string;
+  data?: {
+    backupCodes?: string[];
+    generatedAt?: string;
+    warning?: string;
+  };
+  message?: string;
 }
 
 export interface VerifyResponse {
@@ -202,6 +265,71 @@ class AuthClient {
     }
   }
 
+  private async makeMFARequest(body: any, requireAuth: boolean = true): Promise<any> {
+    // Check environment variables first
+    checkEnvVars();
+    
+    logAuthStep('MFA_REQUEST_START', {
+      action: body.action,
+      requireAuth,
+      hasAccessToken: !!this.accessToken,
+      url: MFA_FUNCTION_URL
+    });
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json',
+      'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY || '',
+    };
+
+    if (requireAuth && this.accessToken) {
+      headers['Authorization'] = `Bearer ${this.accessToken}`;
+      logAuthStep('MFA_AUTH_HEADER_ADDED', { tokenLength: this.accessToken.length });
+    }
+
+    try {
+      const response = await fetch(MFA_FUNCTION_URL, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      });
+
+      logAuthStep('MFA_RESPONSE_RECEIVED', {
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        logAuthError('MFA_REQUEST_FAILED', {
+          status: response.status,
+          statusText: response.statusText,
+          errorText
+        });
+        
+        try {
+          const errorData = JSON.parse(errorText);
+          throw new Error(errorData.error || `HTTP ${response.status}`);
+        } catch (parseError) {
+          throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+      }
+
+      const result = await response.json();
+      logAuthStep('MFA_REQUEST_SUCCESS', {
+        action: body.action,
+        hasResult: !!result,
+        resultKeys: Object.keys(result || {})
+      });
+      
+      return result;
+    } catch (error) {
+      logAuthError('MFA_REQUEST_EXCEPTION', error);
+      throw error;
+    }
+  }
+
   // Authentication methods
   async signIn(email: string, password: string): Promise<AuthResponse> {
     try {
@@ -211,12 +339,47 @@ class AuthClient {
         password
       }, false);
 
-      if (result.accessToken && result.refreshToken && result.user) {
+      console.log('🔍 AuthClient signIn raw response with MFA flags:', {
+        success: result.success,
+        requiresMFA: result.requiresMFA,
+        mfaRequired: result.mfaRequired,
+        hasTempToken: !!result.tempToken,
+        hasUser: !!result.user,
+        hasAccessToken: !!result.accessToken,
+        sessionStatus: result.sessionStatus,
+        message: result.message,
+        nextStep: result.nextStep,
+        error: result.error
+      });
+
+      // Si hay token de acceso exitoso (login completo sin MFA)
+      if (result.accessToken && result.refreshToken && result.user && !result.requiresMFA) {
+        console.log('✅ Complete login without MFA - saving tokens');
         this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
       }
 
-      return result;
+      // Mapear ambos mfaRequired y requiresMFA de la respuesta del servidor
+      if (result.requiresMFA || result.mfaRequired) {
+        console.log('🔐 MFA detected with flag system, setting mfaRequired = true');
+        result.mfaRequired = true;
+      }
+
+      // Retornar la respuesta completa incluyendo sessionStatus
+      return {
+        success: result.success,
+        user: result.user,
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        mfaRequired: result.mfaRequired,
+        requiresMFA: result.requiresMFA,
+        tempToken: result.tempToken,
+        sessionStatus: result.sessionStatus,
+        message: result.message,
+        nextStep: result.nextStep,
+        error: result.error
+      };
     } catch (error) {
+      console.error('❌ AuthClient signIn error with flag system:', error);
       return { error: (error as Error).message };
     }
   }
@@ -278,15 +441,25 @@ class AuthClient {
         refresh_token: this.refreshToken
       }, false);
 
-      if (result.accessToken) {
-        this.accessToken = result.accessToken;
-        localStorage.setItem('evently_access_token', result.accessToken);
+      console.log('🔍 AuthClient refreshAccessToken response with flag system:', {
+        success: result.success,
+        hasAccessToken: !!result.accessToken,
+        hasRefreshToken: !!result.refreshToken,
+        hasUser: !!result.user,
+        sessionStatus: result.sessionStatus
+      });
+
+      if (result.accessToken && result.refreshToken && result.user) {
+        // Actualizar todos los tokens y datos del usuario
+        this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
+        
+        console.log('✅ Tokens refreshed successfully with flag system');
         return result.accessToken;
       }
 
-      throw new Error('Failed to refresh token');
+      throw new Error(result.error || 'Failed to refresh token');
     } catch (error) {
-      console.error('Token refresh failed:', error);
+      console.error('❌ Token refresh failed with flag system:', error);
       this.clearTokens();
       return null;
     }
@@ -324,12 +497,14 @@ class AuthClient {
     }
   }
 
-  // MFA Methods
-  async enrollMFA(): Promise<MFAEnrollResponse> {
+  // TOTP MFA Methods
+  async setupMFA(userId: string, email: string): Promise<TOTPSetupResponse> {
     try {
-      const result = await this.makeRequest({
-        action: 'mfa-enroll'
-      });
+      const result = await this.makeMFARequest({
+        action: 'setup-mfa',
+        userId,
+        email
+      }, false);
 
       return result;
     } catch (error) {
@@ -337,12 +512,13 @@ class AuthClient {
     }
   }
 
-  async createMFAChallenge(factorId: string): Promise<MFAChallengeResponse> {
+  async verifyMFASetup(userId: string, totpCode: string): Promise<TOTPVerifyResponse> {
     try {
-      const result = await this.makeRequest({
-        action: 'mfa-challenge',
-        factorId
-      });
+      const result = await this.makeMFARequest({
+        action: 'verify-setup',
+        userId,
+        totpCode
+      }, false);
 
       return result;
     } catch (error) {
@@ -350,32 +526,69 @@ class AuthClient {
     }
   }
 
-  async verifyMFA(factorId: string, challengeId: string, verificationCode: string): Promise<MFAVerifyResponse> {
+  async verifyMFALogin(tempToken: string, totpCode?: string, backupCode?: string): Promise<TOTPVerifyResponse> {
     try {
       const result = await this.makeRequest({
-        action: 'mfa-verify',
-        factorId,
-        challengeId,
-        verificationCode
+        action: 'verify-mfa-login',
+        tempToken,
+        totpCode,
+        backupCode
+      }, false);
+
+      console.log('🔍 AuthClient verifyMFALogin response with flag system:', {
+        success: result.success,
+        hasUser: !!result.user,
+        hasAccessToken: !!result.accessToken,
+        hasRefreshToken: !!result.refreshToken,
+        sessionStatus: result.sessionStatus,
+        mfaData: result.mfaData,
+        message: result.message
       });
 
-      // Update access token if provided
-      if (result.accessToken) {
-        this.accessToken = result.accessToken;
-        localStorage.setItem('evently_access_token', result.accessToken);
+      // Si es exitoso y tenemos tokens, guardarlos
+      if (result.success && result.accessToken && result.refreshToken && result.user) {
+        console.log('✅ MFA verification successful - saving tokens with flag system');
+        this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
       }
 
+      return {
+        success: result.success,
+        error: result.error,
+        data: {
+          method: result.mfaData?.method,
+          verifiedAt: result.mfaData?.verifiedAt || result.sessionStatus?.verifiedAt,
+          warning: result.mfaData?.warning,
+          verified: result.success,
+          enabled: true // Si llegamos aquí, el MFA está habilitado
+        },
+        message: result.message
+      };
+    } catch (error) {
+      console.error('❌ AuthClient verifyMFALogin error with flag system:', error);
+      return { error: (error as Error).message };
+    }
+  }
+
+  async getMFAStatus(userId: string): Promise<TOTPStatusResponse> {
+    try {
+      const result = await this.makeMFARequest({
+        action: 'get-status',
+        userId
+      }, false);
+
       return result;
     } catch (error) {
       return { error: (error as Error).message };
     }
   }
 
-  async listMFAFactors(): Promise<MFAListResponse> {
+  async disableMFA(userId: string, totpCode: string): Promise<TOTPVerifyResponse> {
     try {
-      const result = await this.makeRequest({
-        action: 'mfa-list-factors'
-      });
+      const result = await this.makeMFARequest({
+        action: 'disable-mfa',
+        userId,
+        totpCode
+      }, false);
 
       return result;
     } catch (error) {
@@ -383,12 +596,13 @@ class AuthClient {
     }
   }
 
-  async unenrollMFA(factorId: string): Promise<{ success?: boolean; error?: string }> {
+  async generateBackupCodes(userId: string, totpCode: string): Promise<TOTPBackupCodesResponse> {
     try {
-      const result = await this.makeRequest({
-        action: 'mfa-unenroll',
-        factorId
-      });
+      const result = await this.makeMFARequest({
+        action: 'generate-backup-codes',
+        userId,
+        totpCode
+      }, false);
 
       return result;
     } catch (error) {

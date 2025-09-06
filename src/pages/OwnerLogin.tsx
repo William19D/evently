@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import MfaLogin from "@/components/MfaLogin";
 import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerLogin = () => {
@@ -15,10 +16,11 @@ const OwnerLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showMfaDialog, setShowMfaDialog] = useState(false);
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { signInWithMfa } = useAuth();
+  const { signIn, user } = useAuth();
 
   const validateForm = () => {
     const newErrors: {email?: string, password?: string} = {};
@@ -50,15 +52,39 @@ const OwnerLogin = () => {
     setIsLoading(true);
     
     try {
-      const result = await signInWithMfa(email, password);
+      const result = await signIn(email, password);
       
-      if (result.error) {
-        // Manejo específico para error de email no verificado
-        if (result.error.includes('verificar tu email')) {
+      if (result.success) {
+        // Check if MFA is required
+        if (result.mfaRequired) {
+          setShowMfaDialog(true);
+          toast({
+            title: "Verificación Requerida",
+            description: "Ingresa tu código de autenticación de dos factores",
+          });
+        } else {
+          // Regular login success
+          toast({
+            title: "¡Bienvenido Propietario!",
+            description: "Has iniciado sesión exitosamente",
+          });
+          
+          // Redirect to owner dashboard after a short delay to ensure context is updated
+          setTimeout(() => {
+            navigate('/owner/dashboard');
+          }, 100);
+        }
+      } else {
+        // Handle login errors
+        if (result.error?.includes('Credenciales inválidas') || result.error?.includes('Invalid login credentials')) {
+          setErrors({
+            general: "Credenciales inválidas. Verifica tu email y contraseña."
+          });
+        } else if (result.error?.includes('Email not confirmed') || result.error?.includes('verificar tu email')) {
           setErrors({
             general: result.error
           });
-          // Mostrar opción para reenviar verificación
+          // Show option to resend verification
           setTimeout(() => {
             if (window.confirm('¿Quieres que te reenviemos el código de verificación?')) {
               navigate("/verify-email", {
@@ -72,34 +98,34 @@ const OwnerLogin = () => {
           }, 2000);
         } else {
           setErrors({
-            general: result.error.includes('Invalid') || result.error.includes('inválidas')
-              ? "Credenciales incorrectas. Verifica tu email y contraseña." 
-              : result.error
+            general: result.error || "Error al iniciar sesión"
           });
         }
-      } else if (result.requiresMfa && result.mfaData) {
-        // Usuario con MFA habilitado - pedir código de verificación
-        navigate("/two-factor-auth", {
-          state: {
-            mfaData: result.mfaData
-          }
-        });
-      } else {
-        // Login exitoso
-        toast({
-          title: "¡Bienvenido Propietario!",
-          description: "Has iniciado sesión correctamente.",
-        });
-        navigate("/dashboard");
       }
     } catch (error) {
       console.error('Login error:', error);
       setErrors({
-        general: "Error de conexión. Inténtalo de nuevo."
+        general: "Error de conexión. Intenta nuevamente."
       });
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleMfaSuccess = () => {
+    setShowMfaDialog(false);
+    toast({
+      title: "¡Bienvenido Propietario!",
+      description: "Has iniciado sesión exitosamente",
+    });
+    
+    // Navigate to owner dashboard
+    navigate('/owner/dashboard');
+  };
+
+  const handleMfaCancel = () => {
+    setShowMfaDialog(false);
+    setIsLoading(false);
   };
 
   return (
@@ -242,6 +268,13 @@ const OwnerLogin = () => {
         </Card>
         </div>
       </div>
+
+      {/* MFA Dialog */}
+      <MfaLogin
+        onMfaSuccess={handleMfaSuccess}
+        onCancel={handleMfaCancel}
+        isOpen={showMfaDialog}
+      />
     </div>
   );
 };
