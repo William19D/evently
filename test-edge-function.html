@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Edge Function - Espacios Públicos</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        pre {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .space-card {
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f9f9f9;
+        }
+        .space-card h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .space-card p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Edge Function - Espacios Públicos</h1>
+        
+        <div class="info">
+            <strong>URL de la Edge Function:</strong><br>
+            https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/public-space
+        </div>
+        
+        <div>
+            <button onclick="testBasicConnection()" id="basicBtn">Test Básico</button>
+            <button onclick="testWithFilters()" id="filterBtn">Test con Filtros</button>
+            <button onclick="testSingleSpace()" id="singleBtn">Test Espacio Individual</button>
+            <button onclick="clearResults()" id="clearBtn">Limpiar</button>
+        </div>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const API_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/public-space';
+        
+        function addResult(type, title, content) {
+            const resultsDiv = document.getElementById('results');
+            const resultDiv = document.createElement('div');
+            resultDiv.className = `result ${type}`;
+            resultDiv.innerHTML = `<strong>${title}</strong><br>${content}`;
+            resultsDiv.appendChild(resultDiv);
+        }
+        
+        function addSpaceCards(spaces) {
+            const resultsDiv = document.getElementById('results');
+            const spacesDiv = document.createElement('div');
+            spacesDiv.innerHTML = '<h3>Espacios Encontrados:</h3>';
+            
+            spaces.forEach(space => {
+                const spaceCard = document.createElement('div');
+                spaceCard.className = 'space-card';
+                spaceCard.innerHTML = `
+                    <h4>${space.name} (${space.type})</h4>
+                    <p><strong>Ubicación:</strong> ${space.location}</p>
+                    <p><strong>Capacidad:</strong> ${space.capacity} personas</p>
+                    <p><strong>Precio:</strong> ${space.price_formatted}/hora</p>
+                    <p><strong>Rating:</strong> ${space.rating.average}/5 (${space.rating.count} reseñas)</p>
+                    <p><strong>Amenidades:</strong> ${space.amenities.length}</p>
+                    <p><strong>Fotos:</strong> ${space.photos.length}</p>
+                `;
+                spacesDiv.appendChild(spaceCard);
+            });
+            
+            resultsDiv.appendChild(spacesDiv);
+        }
+        
+        function setButtonsEnabled(enabled) {
+            const buttons = ['basicBtn', 'filterBtn', 'singleBtn'];
+            buttons.forEach(id => {
+                document.getElementById(id).disabled = !enabled;
+            });
+        }
+        
+        async function testBasicConnection() {
+            setButtonsEnabled(false);
+            addResult('info', 'Iniciando Test Básico...', 'Obteniendo primeros 5 espacios');
+            
+            try {
+                const url = `${API_URL}?limit=5&sort_by=created_at&sort_order=desc`;
+                console.log('🌍 Fetching:', url);
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log('📦 Response data:', data);
+                
+                if (data.success) {
+                    addResult('success', 'Conexión Exitosa!', 
+                        `Se obtuvieron ${data.data.length} espacios de ${data.pagination.total} totales`);
+                    
+                    if (data.data.length > 0) {
+                        addSpaceCards(data.data);
+                    }
+                } else {
+                    throw new Error(data.error || 'Respuesta no exitosa');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                addResult('error', 'Error en la conexión', 
+                    `${error.message}<br><br>Detalles en la consola del navegador`);
+            } finally {
+                setButtonsEnabled(true);
+            }
+        }
+        
+        async function testWithFilters() {
+            setButtonsEnabled(false);
+            addResult('info', 'Test con Filtros...', 'Buscando espacios tipo "salon" con capacidad mínima 50');
+            
+            try {
+                const url = `${API_URL}?type=salon&min_capacity=50&limit=3`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addResult('success', 'Filtros Aplicados Correctamente!', 
+                        `Filtros funcionando: ${data.data.length} espacios encontrados`);
+                    
+                    if (data.data.length > 0) {
+                        addSpaceCards(data.data);
+                    }
+                } else {
+                    throw new Error(data.error || 'Error en filtros');
+                }
+                
+            } catch (error) {
+                addResult('error', 'Error con filtros', error.message);
+            } finally {
+                setButtonsEnabled(true);
+            }
+        }
+        
+        async function testSingleSpace() {
+            setButtonsEnabled(false);
+            addResult('info', 'Test Espacio Individual...', 'Primero obtenemos una lista y luego un espacio específico');
+            
+            try {
+                // Primero obtenemos una lista para tener un ID
+                const listResponse = await fetch(`${API_URL}?limit=1`);
+                const listData = await listResponse.json();
+                
+                if (!listData.success || listData.data.length === 0) {
+                    throw new Error('No hay espacios para probar');
+                }
+                
+                const spaceId = listData.data[0].id;
+                
+                // Ahora obtenemos el espacio específico con reviews
+                const url = `${API_URL}?id=${spaceId}&include_reviews=true`;
+                
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addResult('success', 'Espacio Individual Obtenido!', 
+                        `Espacio ID ${spaceId} con ${data.data.reviews ? data.data.reviews.length : 0} reviews`);
+                    
+                    addSpaceCards([data.data]);
+                } else {
+                    throw new Error(data.error || 'Error obteniendo espacio individual');
+                }
+                
+            } catch (error) {
+                addResult('error', 'Error con espacio individual', error.message);
+            } finally {
+                setButtonsEnabled(true);
+            }
+        }
+        
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        // Test automático al cargar la página
+        window.onload = function() {
+            addResult('info', 'Página Cargada', 'Listo para hacer pruebas. Haz clic en "Test Básico" para empezar.');
+        };
+    </script>
+</body>
+</html>

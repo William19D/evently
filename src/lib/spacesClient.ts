@@ -11,6 +11,9 @@ interface SpaceData {
   description: string;
   amenities?: string[];
   photos?: Array<string | { data: string; name: string; type: string }>;
+  status?: 'pending' | 'approved' | 'rejected';
+  rejection_reason?: string;
+  review_reason?: string;
 }
 
 interface SpaceResponse {
@@ -306,6 +309,89 @@ export class SpacesClient {
       this.spacesCache = this.spacesCache.filter(space => space.id_space !== spaceId);
       this.cacheTimestamp = Date.now(); // Actualizar timestamp
       console.log('✅ Espacio eliminado del cache');
+    }
+
+    return response;
+  }
+
+  // ✅ Aprobar espacio (función específica para superadmin)
+  async approveSpace(spaceId: number): Promise<SpaceResponse> {
+    console.log('🟢 Aprobando espacio:', spaceId);
+    
+    // Usar updateSpace con status approved
+    const response = await this.updateSpace(spaceId, { 
+      status: 'approved' 
+    } as any);
+
+    // Actualizar status en cache si fue exitoso
+    if (response.success) {
+      const spaceIndex = this.spacesCache.findIndex(space => space.id_space === spaceId);
+      if (spaceIndex !== -1) {
+        this.spacesCache[spaceIndex].status = 'approved';
+        console.log('✅ Estado del espacio actualizado a "approved" en cache');
+      }
+    }
+
+    return response;
+  }
+
+  // ❌ Rechazar espacio (función específica para superadmin)
+  async rejectSpace(spaceId: number, reason?: string): Promise<SpaceResponse> {
+    console.log('🔴 Rechazando espacio:', spaceId, 'Motivo:', reason);
+    
+    // Usar updateSpace con status rejected
+    const updateData: any = { 
+      status: 'rejected'
+    };
+    
+    if (reason) {
+      updateData.rejection_reason = reason;
+    }
+    
+    const response = await this.updateSpace(spaceId, updateData);
+
+    // Actualizar status en cache si fue exitoso
+    if (response.success) {
+      const spaceIndex = this.spacesCache.findIndex(space => space.id_space === spaceId);
+      if (spaceIndex !== -1) {
+        this.spacesCache[spaceIndex].status = 'rejected';
+        if (reason) {
+          this.spacesCache[spaceIndex].rejection_reason = reason;
+        }
+        console.log('✅ Estado del espacio actualizado a "rejected" en cache');
+      }
+    }
+
+    return response;
+  }
+
+  // 🔄 Marcar espacio como pendiente (función específica para superadmin)
+  async markAsPending(spaceId: number, reason?: string): Promise<SpaceResponse> {
+    console.log('🟡 Marcando espacio como pendiente:', spaceId, 'Motivo:', reason);
+    
+    // Usar updateSpace con status pending
+    const updateData: any = { 
+      status: 'pending'
+    };
+    
+    if (reason) {
+      updateData.review_reason = reason; // Motivo de la revisión
+    }
+    
+    const response = await this.updateSpace(spaceId, updateData);
+
+    // Actualizar status en cache si fue exitoso
+    if (response.success) {
+      const spaceIndex = this.spacesCache.findIndex(space => space.id_space === spaceId);
+      if (spaceIndex !== -1) {
+        this.spacesCache[spaceIndex].status = 'pending';
+        if (reason) {
+          this.spacesCache[spaceIndex].review_reason = reason;
+        }
+        // Limpiar rejection_reason si existía
+        delete this.spacesCache[spaceIndex].rejection_reason;
+        console.log('✅ Estado del espacio actualizado a "pending" en cache');
+      }
     }
 
     return response;

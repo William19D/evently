@@ -9,22 +9,22 @@ interface VenueCardProps {
   name: string;
   location: string;
   image: string;
-  price: number;
-  rating: number;
+  price: number | null | undefined;
+  rating: number | null | undefined;
   capacity: string;
-  amenities: string[];
+  amenities: string[] | null | undefined;
   featured?: boolean;
 }
 
 const VenueCard = ({ 
-  id,
-  name, 
-  location, 
-  image, 
-  price, 
-  rating, 
-  capacity, 
-  amenities, 
+  id = 'unknown',
+  name = 'Espacio sin nombre', 
+  location = 'Ubicación no especificada', 
+  image = '/placeholder.svg', 
+  price = 0, 
+  rating = 0, 
+  capacity = '0 personas', 
+  amenities = [], 
   featured = false 
 }: VenueCardProps) => {
   const getAmenityIcon = (amenity: string) => {
@@ -67,7 +67,7 @@ const VenueCard = ({
           </div>
           <div className="flex items-center gap-1 text-sm">
             <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-            <span className="font-medium">{rating}</span>
+            <span className="font-medium">{(rating || 0).toFixed(1)}</span>
           </div>
         </div>
 
@@ -77,13 +77,13 @@ const VenueCard = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {amenities.slice(0, 3).map((amenity, index) => (
+          {(amenities || []).slice(0, 3).map((amenity, index) => (
             <div key={index} className="flex items-center gap-1 text-xs text-muted-foreground">
               {getAmenityIcon(amenity)}
               <span>{amenity}</span>
             </div>
           ))}
-          {amenities.length > 3 && (
+          {(amenities || []).length > 3 && (
             <span className="text-xs text-muted-foreground">+{amenities.length - 3} más</span>
           )}
         </div>
@@ -91,11 +91,15 @@ const VenueCard = ({
         <div className="flex items-center justify-between pt-2 border-t border-border">
           <div className="text-right">
             <div className="text-2xl font-bold text-primary">
-              ${price.toLocaleString()}
+              {price != null && price > 0 ? (
+                `$${price.toLocaleString()}`
+              ) : (
+                'Consultar precio'
+              )}
             </div>
-            <div className="text-xs text-muted-foreground">por evento</div>
+            <div className="text-xs text-muted-foreground">por hora</div>
           </div>
-          <Link to={`/event/${id}`}>
+          <Link to={`/spaces/${id}`}>
             <Button size="sm" className="shadow-soft hover:shadow-card">
               Ver Detalles
             </Button>

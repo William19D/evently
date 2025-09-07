@@ -98,9 +98,21 @@ const Footer = () => {
             <p className="text-white/60 text-sm">
               © 2025 Evently. Todos los derechos reservados.
             </p>
-            <p className="text-white/60 text-sm flex items-center gap-1 mt-4 md:mt-0">
-              Hecho con <Heart className="w-4 h-4 text-red-500" /> para eventos únicos
-            </p>
+            <div className="flex flex-col md:flex-row items-center gap-4 mt-4 md:mt-0">
+              {/* Enlace temporal de desarrollo para acceso a superadmin */}
+              {process.env.NODE_ENV === 'development' && (
+                <a 
+                  href="/superadmin/login" 
+                  className="text-white/40 hover:text-white/60 text-xs underline transition-colors"
+                  title="Panel de Superadministrador (Solo desarrollo)"
+                >
+                  🔐 Admin
+                </a>
+              )}
+              <p className="text-white/60 text-sm flex items-center gap-1">
+                Hecho con <Heart className="w-4 h-4 text-red-500" /> para eventos únicos
+              </p>
+            </div>
           </div>
         </div>
       </div>

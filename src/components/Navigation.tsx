@@ -59,6 +59,14 @@ const Navigation = () => {
               <span>Buscar</span>
             </Link>
 
+            <Link 
+              to="/spaces" 
+              className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-1"
+            >
+              <Building2 className="w-4 h-4" />
+              <span>Espacios</span>
+            </Link>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -228,6 +236,15 @@ const Navigation = () => {
               >
                 <Search className="w-4 h-4 inline mr-2" />
                 Buscar Espacios
+              </Link>
+              
+              <Link
+                to="/spaces"
+                className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Building2 className="w-4 h-4 inline mr-2" />
+                Espacios Disponibles
               </Link>
               
               <div className="px-3 py-2">
