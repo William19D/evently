@@ -14,6 +14,7 @@ import { useRecaptcha } from "@/hooks/use-recaptcha";
 import { authClient } from "@/lib/authClient";
 import { getDisplayError } from "@/utils/errorMessages";
 import RecaptchaBadge from "@/components/RecaptchaBadge";
+import RecaptchaConfigError from "@/components/RecaptchaConfigError";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientRegister = () => {
@@ -37,7 +38,7 @@ const ClientRegister = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, register } = useAuth();
-  const { executeRecaptcha, loadRecaptcha } = useRecaptcha();
+  const { executeRecaptcha, loadRecaptcha, isConfigured, error: recaptchaError } = useRecaptcha();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -311,6 +312,9 @@ const ClientRegister = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Error de configuración de reCAPTCHA */}
+            {recaptchaError && <RecaptchaConfigError error={recaptchaError} siteKey={import.meta.env.VITE_RECAPTCHA_SITE_KEY} />}
+            
             {Object.keys(errors).length > 0 && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />

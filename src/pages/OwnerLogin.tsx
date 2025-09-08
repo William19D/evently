@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRecaptcha } from "@/hooks/use-recaptcha";
 import MfaLogin from "@/components/MfaLogin";
 import RecaptchaBadge from "@/components/RecaptchaBadge";
+import RecaptchaConfigError from "@/components/RecaptchaConfigError";
 import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerLogin = () => {
@@ -25,7 +26,7 @@ const OwnerLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
-  const { executeRecaptcha, loadRecaptcha } = useRecaptcha();
+  const { executeRecaptcha, loadRecaptcha, isConfigured, error: recaptchaError } = useRecaptcha();
 
   // Load reCAPTCHA when component mounts
   useEffect(() => {

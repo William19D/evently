@@ -28,7 +28,7 @@ const ClientLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, signIn } = useAuth();
-  const { executeRecaptcha, loadRecaptcha, isConfigured } = useRecaptcha();
+  const { executeRecaptcha, loadRecaptcha, isConfigured, error: recaptchaError } = useRecaptcha();
 
   // 🔍 Debug state changes
   useEffect(() => {
@@ -237,6 +237,18 @@ const ClientLogin = () => {
           </CardHeader>
 
           <CardContent className="space-y-6">
+            {/* Error de configuración de reCAPTCHA */}
+            {recaptchaError && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Error reCAPTCHA:</strong> {recaptchaError}
+                  <br />
+                  <small>Verifica tu configuración de VITE_RECAPTCHA_SITE_KEY en el archivo .env</small>
+                </AlertDescription>
+              </Alert>
+            )}
+            
             {errors.general && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
