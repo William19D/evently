@@ -331,12 +331,13 @@ class AuthClient {
   }
 
   // Authentication methods
-  async signIn(email: string, password: string): Promise<AuthResponse> {
+  async signIn(email: string, password: string, recaptchaToken?: string): Promise<AuthResponse> {
     try {
       const result = await this.makeRequest({
         action: 'signin',
         email,
-        password
+        password,
+        recaptchaToken
       }, false);
 
       console.log('🔍 AuthClient signIn raw response with MFA flags:', {
@@ -384,7 +385,7 @@ class AuthClient {
     }
   }
 
-  async register(data: RegisterRequest): Promise<AuthResponse> {
+  async register(data: RegisterRequest, recaptchaToken?: string): Promise<AuthResponse> {
     try {
       const result = await this.makeRequest({
         action: 'register',
@@ -392,7 +393,8 @@ class AuthClient {
         password: data.password,
         firstName: data.firstName,
         lastName: data.lastName,
-        role: data.role || 'member' // Cambiar default de 'user' a 'member'
+        role: data.role || 'member', // Cambiar default de 'user' a 'member'
+        recaptchaToken
       }, false);
 
       // Para registro, NO guardamos tokens inmediatamente porque necesita verificación por email

@@ -8,6 +8,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 import { authClient } from "@/lib/authClient";
 import authBackground from "@/assets/auth-background.jpg";
 
@@ -20,6 +21,7 @@ const SuperadminLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, signIn, signOut } = useAuth();
+  const { executeRecaptcha, loadRecaptcha } = useRecaptcha();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -27,6 +29,11 @@ const SuperadminLogin = () => {
       navigate("/superadmin/dashboard");
     }
   }, [user, navigate]);
+
+  // Load reCAPTCHA when component mounts
+  useEffect(() => {
+    loadRecaptcha().catch(console.error);
+  }, [loadRecaptcha]);
 
   const validateForm = () => {
     const newErrors: {email?: string, password?: string} = {};
@@ -58,7 +65,13 @@ const SuperadminLogin = () => {
     setIsLoading(true);
     
     try {
-      const result = await signIn(email, password);
+      console.log('🔄 SuperadminLogin: Starting login process with reCAPTCHA...');
+      
+      // Execute reCAPTCHA before login
+      const recaptchaToken = await executeRecaptcha('login');
+      console.log('✅ reCAPTCHA token obtained for superadmin login');
+      
+      const result = await signIn(email, password, recaptchaToken);
       
       if (result.error) {
         // Manejo específico para superadmin
@@ -94,9 +107,20 @@ const SuperadminLogin = () => {
         });
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Superadmin login error:', error);
+      
+      // Manejar errores específicos de reCAPTCHA
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let friendlyErrorMessage: string;
+      
+      if (errorMessage.toLowerCase().includes('recaptcha')) {
+        friendlyErrorMessage = "Error de verificación de seguridad. Por favor, intenta nuevamente.";
+      } else {
+        friendlyErrorMessage = "Error de conexión. Inténtalo de nuevo.";
+      }
+      
       setErrors({
-        general: "Error de conexión. Inténtalo de nuevo."
+        general: friendlyErrorMessage
       });
     } finally {
       setIsLoading(false);

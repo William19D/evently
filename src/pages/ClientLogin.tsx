@@ -9,8 +9,11 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 import { getDisplayError } from "@/utils/errorMessages";
 import MfaLogin from "@/components/MfaLogin";
+import RecaptchaBadge from "@/components/RecaptchaBadge";
+import { envTest } from "@/lib/envTest";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientLogin = () => {
@@ -19,10 +22,13 @@ const ClientLogin = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showMfaDialog, setShowMfaDialog] = useState(false);
+  const [recaptchaLoading, setRecaptchaLoading] = useState(false);
+  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, signIn } = useAuth();
+  const { executeRecaptcha, loadRecaptcha, isConfigured } = useRecaptcha();
 
   // 🔍 Debug state changes
   useEffect(() => {
@@ -38,6 +44,25 @@ const ClientLogin = () => {
       navigate("/");
     }
   }, [user, navigate]);
+
+  // Load reCAPTCHA when component mounts
+  useEffect(() => {
+    loadRecaptcha().catch(console.error);
+  }, [loadRecaptcha]);
+
+  // Debug environment variables
+  useEffect(() => {
+    console.log('🔧 ClientLogin - Environment Test:', envTest);
+    console.log('🔧 Direct env access:', {
+      VITE_RECAPTCHA_SITE_KEY: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
+      allViteKeys: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')),
+      isRecaptchaConfigured: isConfigured
+    });
+    
+    if (!isConfigured) {
+      console.warn('⚠️ reCAPTCHA not properly configured!');
+    }
+  }, [isConfigured]);
 
   const validateForm = () => {
     const newErrors: {email?: string, password?: string} = {};
@@ -68,10 +93,18 @@ const ClientLogin = () => {
     }
     
     setIsLoading(true);
+    setRecaptchaLoading(true);
     
     try {
-      console.log('🔄 ClientLogin: Starting login process...');
-      const result = await signIn(email, password);
+      console.log('🔄 ClientLogin: Starting login process with reCAPTCHA...');
+      
+      // Execute reCAPTCHA before login
+      const recaptchaToken = await executeRecaptcha('login');
+      console.log('✅ reCAPTCHA token obtained for login');
+      setRecaptchaLoading(false);
+      setRecaptchaVerified(true);
+      
+      const result = await signIn(email, password, recaptchaToken);
       
       console.log('📊 ClientLogin: Login result received:', {
         success: result.success,
@@ -124,8 +157,17 @@ const ClientLogin = () => {
     } catch (error) {
       console.error('❌ ClientLogin: Exception during login:', error);
       
-      // Usar el sistema de manejo de errores user-friendly
-      const friendlyErrorMessage = getDisplayError(error);
+      // Manejar errores específicos de reCAPTCHA
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let friendlyErrorMessage: string;
+      
+      if (errorMessage.toLowerCase().includes('recaptcha')) {
+        friendlyErrorMessage = "Error de verificación de seguridad. Por favor, intenta nuevamente.";
+      } else {
+        // Usar el sistema de manejo de errores user-friendly
+        friendlyErrorMessage = getDisplayError(error);
+      }
+      
       console.log('📢 User-friendly login exception:', friendlyErrorMessage);
       
       setErrors({ general: friendlyErrorMessage });
@@ -139,6 +181,7 @@ const ClientLogin = () => {
       setIsLoading(false);
     } finally {
       setIsLoading(false);
+      setRecaptchaLoading(false);
     }
   };
 
@@ -208,6 +251,15 @@ const ClientLogin = () => {
               </AlertDescription>
             </Alert>
 
+            {!isConfigured && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Debug:</strong> reCAPTCHA no configurado. Revisa VITE_RECAPTCHA_SITE_KEY en .env
+                </AlertDescription>
+              </Alert>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Correo electrónico</Label>
@@ -268,6 +320,12 @@ const ClientLogin = () => {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
+
+              <RecaptchaBadge 
+                isLoading={recaptchaLoading}
+                isVerified={recaptchaVerified}
+                className="justify-center mb-4"
+              />
 
               <Button 
                 type="submit" 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
   EyeOff
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useRecaptcha } from '@/hooks/use-recaptcha';
 import { useToast } from '@/hooks/use-toast';
 import MfaLogin from '@/components/MfaLogin';
 
@@ -22,6 +23,7 @@ const Login = () => {
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
   const { toast } = useToast();
+  const { executeRecaptcha, loadRecaptcha } = useRecaptcha();
   
   const [formData, setFormData] = useState({
     email: '',
@@ -29,6 +31,11 @@ const Login = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  // Load reCAPTCHA when component mounts
+  useEffect(() => {
+    loadRecaptcha().catch(console.error);
+  }, [loadRecaptcha]);
   const [showMfaDialog, setShowMfaDialog] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
@@ -76,8 +83,13 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      console.log('🔍 Login component - calling signIn...');
-      const result = await signIn(formData.email, formData.password);
+      console.log('🔍 Login component - calling signIn with reCAPTCHA...');
+      
+      // Execute reCAPTCHA before login
+      const recaptchaToken = await executeRecaptcha('login');
+      console.log('✅ reCAPTCHA token obtained for login');
+      
+      const result = await signIn(formData.email, formData.password, recaptchaToken);
       console.log('🔍 Login component - signIn result:', {
         success: result.success,
         mfaRequired: result.mfaRequired,
@@ -136,9 +148,21 @@ const Login = () => {
         }
       }
     } catch (error) {
+      console.error('Login error:', error);
+      
+      // Manejar errores específicos de reCAPTCHA
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let friendlyErrorMessage: string;
+      
+      if (errorMessage.toLowerCase().includes('recaptcha')) {
+        friendlyErrorMessage = "Error de verificación de seguridad. Por favor, intenta nuevamente.";
+      } else {
+        friendlyErrorMessage = "Error de conexión. Intenta nuevamente.";
+      }
+      
       toast({
         title: "Error",
-        description: "Error de conexión. Intenta nuevamente.",
+        description: friendlyErrorMessage,
         variant: "destructive",
       });
     } finally {

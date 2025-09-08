@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,7 +8,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Building2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 import MfaLogin from "@/components/MfaLogin";
+import RecaptchaBadge from "@/components/RecaptchaBadge";
 import authBackground from "@/assets/auth-background.jpg";
 
 const OwnerLogin = () => {
@@ -17,10 +19,18 @@ const OwnerLogin = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showMfaDialog, setShowMfaDialog] = useState(false);
+  const [recaptchaLoading, setRecaptchaLoading] = useState(false);
+  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
   const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
+  const { executeRecaptcha, loadRecaptcha } = useRecaptcha();
+
+  // Load reCAPTCHA when component mounts
+  useEffect(() => {
+    loadRecaptcha().catch(console.error);
+  }, [loadRecaptcha]);
 
   const validateForm = () => {
     const newErrors: {email?: string, password?: string} = {};
@@ -50,9 +60,18 @@ const OwnerLogin = () => {
     }
     
     setIsLoading(true);
+    setRecaptchaLoading(true);
     
     try {
-      const result = await signIn(email, password);
+      console.log('🔄 OwnerLogin: Starting login process with reCAPTCHA...');
+      
+      // Execute reCAPTCHA before login
+      const recaptchaToken = await executeRecaptcha('login');
+      setRecaptchaLoading(false);
+      setRecaptchaVerified(true);
+      console.log('✅ reCAPTCHA token obtained for owner login');
+      
+      const result = await signIn(email, password, recaptchaToken);
       
       if (result.success) {
         // Check if MFA is required
@@ -103,12 +122,24 @@ const OwnerLogin = () => {
         }
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Owner login error:', error);
+      
+      // Manejar errores específicos de reCAPTCHA
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let friendlyErrorMessage: string;
+      
+      if (errorMessage.toLowerCase().includes('recaptcha')) {
+        friendlyErrorMessage = "Error de verificación de seguridad. Por favor, intenta nuevamente.";
+      } else {
+        friendlyErrorMessage = "Error de conexión. Intenta nuevamente.";
+      }
+      
       setErrors({
-        general: "Error de conexión. Intenta nuevamente."
+        general: friendlyErrorMessage
       });
     } finally {
       setIsLoading(false);
+      setRecaptchaLoading(false);
     }
   };
 
@@ -247,6 +278,12 @@ const OwnerLogin = () => {
                   ¿Olvidaste tu contraseña?
                 </Link>
               </div>
+
+              <RecaptchaBadge 
+                isLoading={recaptchaLoading}
+                isVerified={recaptchaVerified}
+                className="justify-center mb-4"
+              />
 
               <Button 
                 type="submit" 

@@ -10,8 +10,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, User as UserIcon, Phone, ArrowLeft, Chrome, AlertCircle, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 import { authClient } from "@/lib/authClient";
 import { getDisplayError } from "@/utils/errorMessages";
+import RecaptchaBadge from "@/components/RecaptchaBadge";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientRegister = () => {
@@ -28,11 +30,14 @@ const ClientRegister = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showEmailSent, setShowEmailSent] = useState(false);
+  const [recaptchaLoading, setRecaptchaLoading] = useState(false);
+  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, register } = useAuth();
+  const { executeRecaptcha, loadRecaptcha } = useRecaptcha();
 
   useEffect(() => {
     // Check if user is already logged in
@@ -40,6 +45,11 @@ const ClientRegister = () => {
       navigate("/");
     }
   }, [user, navigate]);
+
+  // Load reCAPTCHA when component mounts
+  useEffect(() => {
+    loadRecaptcha().catch(console.error);
+  }, [loadRecaptcha]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -101,15 +111,24 @@ const ClientRegister = () => {
     }
 
     setIsLoading(true);
+    setRecaptchaLoading(true);
     
     try {
-      const result = await authClient.register({
+      console.log('🔄 ClientRegister: Starting registration process with reCAPTCHA...');
+      
+      // Execute reCAPTCHA before registration
+      const recaptchaToken = await executeRecaptcha('register');
+      setRecaptchaLoading(false);
+      setRecaptchaVerified(true);
+      console.log('✅ reCAPTCHA token obtained for registration');
+      
+      const result = await register({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
         role: 'member' // Cliente se registra como 'member'
-      });
+      }, recaptchaToken);
 
       if (result.error) {
         if (result.error.includes('User already registered') || result.error.includes('ya está registrado')) {
@@ -143,15 +162,25 @@ const ClientRegister = () => {
     } catch (error: any) {
       console.error('❌ Registration exception:', error);
       
-      // Usar el sistema de manejo de errores user-friendly
-      const errorMessage = getDisplayError(error);
-      console.log('📢 User-friendly registration exception:', errorMessage);
+      // Manejar errores específicos de reCAPTCHA
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let friendlyErrorMessage: string;
+      
+      if (errorMessage.toLowerCase().includes('recaptcha')) {
+        friendlyErrorMessage = "Error de verificación de seguridad. Por favor, intenta nuevamente.";
+      } else {
+        // Usar el sistema de manejo de errores user-friendly
+        friendlyErrorMessage = getDisplayError(error);
+      }
+      
+      console.log('📢 User-friendly registration exception:', friendlyErrorMessage);
       
       setErrors({
-        general: errorMessage
+        general: friendlyErrorMessage
       });
     } finally {
       setIsLoading(false);
+      setRecaptchaLoading(false);
     }
   };
 
@@ -459,6 +488,12 @@ const ClientRegister = () => {
                   <p className="text-sm text-destructive">{errors.acceptTerms}</p>
                 )}
               </div>
+
+              <RecaptchaBadge 
+                isLoading={recaptchaLoading}
+                isVerified={recaptchaVerified}
+                className="justify-center mb-4"
+              />
 
               <Button 
                 type="submit" 

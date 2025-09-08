@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, AlertCircle, Building2, CheckCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useRecaptcha } from "@/hooks/use-recaptcha";
 import { authClient } from "@/lib/authClient";
 import { getDisplayError } from "@/utils/errorMessages";
 import authBackground from "@/assets/auth-background.jpg";
@@ -28,6 +29,12 @@ const OwnerRegister = () => {
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  const { executeRecaptcha, loadRecaptcha } = useRecaptcha();
+
+  // Load reCAPTCHA when component mounts
+  useEffect(() => {
+    loadRecaptcha().catch(console.error);
+  }, [loadRecaptcha]);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -84,13 +91,19 @@ const OwnerRegister = () => {
     setIsLoading(true);
     
     try {
+      console.log('🔄 OwnerRegister: Starting registration process with reCAPTCHA...');
+      
+      // Execute reCAPTCHA before registration
+      const recaptchaToken = await executeRecaptcha('register');
+      console.log('✅ reCAPTCHA token obtained for owner registration');
+      
       const result = await authClient.register({
         email: formData.email,
         password: formData.password,
         firstName: formData.firstName,
         lastName: formData.lastName,
         role: 'owner'
-      });
+      }, recaptchaToken);
 
       if (result.error) {
         if (result.error.includes('User already registered') || result.error.includes('ya está registrado')) {
@@ -120,12 +133,21 @@ const OwnerRegister = () => {
     } catch (error: any) {
       console.error('❌ Owner registration exception:', error);
       
-      // Usar el sistema de manejo de errores user-friendly
-      const errorMessage = getDisplayError(error);
-      console.log('📢 User-friendly owner registration exception:', errorMessage);
+      // Manejar errores específicos de reCAPTCHA
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      let friendlyErrorMessage: string;
+      
+      if (errorMessage.toLowerCase().includes('recaptcha')) {
+        friendlyErrorMessage = "Error de verificación de seguridad. Por favor, intenta nuevamente.";
+      } else {
+        // Usar el sistema de manejo de errores user-friendly
+        friendlyErrorMessage = getDisplayError(error);
+      }
+      
+      console.log('📢 User-friendly owner registration exception:', friendlyErrorMessage);
       
       setErrors({
-        general: errorMessage
+        general: friendlyErrorMessage
       });
     } finally {
       setIsLoading(false);

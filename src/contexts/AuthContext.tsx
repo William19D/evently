@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authClient, type AuthUser, type TOTPSetupResponse, type TOTPVerifyResponse, type TOTPStatusResponse, type TOTPBackupCodesResponse } from '@/lib/authClient';
+import { authClient, type AuthUser, type TOTPSetupResponse, type TOTPVerifyResponse, type TOTPStatusResponse, type TOTPBackupCodesResponse, type RegisterRequest } from '@/lib/authClient';
 import { logAuthStep, logAuthError } from '@/lib/authDebug';
 import { getDisplayError } from '@/utils/errorMessages';
 import { toast } from 'sonner';
@@ -10,8 +10,9 @@ interface AuthContextType {
   isMfaEnabled: boolean;
   // Estado del flujo MFA
   isMfaPending: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; mfaRequired?: boolean; error?: string }>;
+  signIn: (email: string, password: string, recaptchaToken?: string) => Promise<{ success: boolean; mfaRequired?: boolean; error?: string }>;
   signOut: () => Promise<void>;
+  register: (data: RegisterRequest, recaptchaToken?: string) => Promise<{ success: boolean; error?: string }>;
   // TOTP MFA functions
   checkMfaStatus: () => Promise<boolean>;
   setupMFA: () => Promise<TOTPSetupResponse>;
@@ -361,14 +362,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initializeAuth();
   }, []);
 
-  const signIn = async (email: string, password: string): Promise<{ success: boolean; mfaRequired?: boolean; error?: string }> => {
+  const signIn = async (email: string, password: string, recaptchaToken?: string): Promise<{ success: boolean; mfaRequired?: boolean; error?: string }> => {
     try {
       setIsLoading(true);
       
       // Limpiar cualquier token temporal previo
       setTempMfaToken(null);
       
-      const response = await authClient.signIn(email, password);
+      const response = await authClient.signIn(email, password, recaptchaToken);
       
       // Debug logging para el sistema de banderas MFA mejorado
       console.log('🔍 AuthContext signIn response with enhanced MFA flag system:', {
@@ -481,6 +482,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const register = async (data: RegisterRequest, recaptchaToken?: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      setIsLoading(true);
+      
+      const response = await authClient.register(data, recaptchaToken);
+      
+      if (response.error) {
+        // Usar el sistema de manejo de errores user-friendly
+        const friendlyError = getDisplayError(response.error);
+        console.log('📢 User-friendly register error:', friendlyError);
+        
+        // Mostrar el error al usuario
+        toast.error('Error en registro', {
+          description: friendlyError
+        });
+        
+        return { success: false, error: friendlyError };
+      }
+      
+      return { success: true };
+    } catch (error: any) {
+      // Usar el sistema de manejo de errores user-friendly
+      const friendlyError = getDisplayError(error);
+      console.log('📢 User-friendly register exception:', friendlyError);
+      
+      // Mostrar el error al usuario
+      toast.error('Error inesperado', {
+        description: friendlyError
+      });
+      
+      return { success: false, error: friendlyError };
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Email verification functions
   const verifyEmail = async (email: string, code: string): Promise<{ success: boolean; error?: string }> => {
     try {
@@ -553,6 +590,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     isMfaPending,
     signIn,
     signOut,
+    register,
     checkMfaStatus,
     // New TOTP MFA functions
     setupMFA,
