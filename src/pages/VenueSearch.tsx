@@ -112,75 +112,92 @@ const VenueSearch = () => {
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Search Header */}
-        <div className="mb-8">
-          {/* Búsqueda general */}
-          <div className="mb-4">
-            <div className="relative max-w-2xl mx-auto">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+      <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Hero Search Section */}
+        <div className="text-center mb-16">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 bg-gradient-primary bg-clip-text text-transparent">
+            Encuentra tu Espacio Perfecto
+          </h1>
+          <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+            Descubre y reserva espacios únicos para tus eventos especiales en toda Colombia
+          </p>
+          
+          {/* Búsqueda principal */}
+          <div className="mb-8">
+            <div className="relative max-w-3xl mx-auto">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
               <Input 
                 placeholder="Buscar espacios por nombre, descripción o ubicación..." 
-                className="pl-10 h-12 text-lg"
+                className="pl-12 h-14 text-lg shadow-elegant border-2 focus:border-primary/50"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
           </div>
-          
-          <div className="flex flex-col lg:flex-row gap-4 mb-6">
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="relative">
-                <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  placeholder="Armenia, Bogotá, Medellín..." 
-                  className="pl-10" 
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
+        </div>
+        
+        {/* Filtros de búsqueda rápida */}
+        <Card className="mb-12 shadow-card border-0 bg-gradient-card">
+          <CardContent className="p-8">
+            <div className="flex flex-col lg:flex-row gap-6">
+              <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input 
+                    placeholder="Armenia, Bogotá, Medellín..." 
+                    className="pl-10 h-12 border-2 focus:border-primary/50" 
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                  />
+                </div>
+                <div className="relative">
+                  <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                  <Input 
+                    type="date" 
+                    className="pl-10 h-12 border-2 focus:border-primary/50"
+                    value={eventDate}
+                    onChange={(e) => setEventDate(e.target.value)}
+                  />
+                </div>
+                <Select value={capacity} onValueChange={setCapacity}>
+                  <SelectTrigger className="h-12 border-2 focus:border-primary/50">
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-2 text-muted-foreground" />
+                      <SelectValue placeholder="Capacidad" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="10-30">10-30 personas</SelectItem>
+                    <SelectItem value="30-50">30-50 personas</SelectItem>
+                    <SelectItem value="50-100">50-100 personas</SelectItem>
+                    <SelectItem value="100-200">100-200 personas</SelectItem>
+                    <SelectItem value="200+">200+ personas</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="relative">
-                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  type="date" 
-                  className="pl-10"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                />
+              <div className="flex gap-3">
+                <Button onClick={handleSearch} disabled={isLoading} size="lg" className="shadow-soft">
+                  <Search className="w-4 h-4 mr-2" />
+                  {isLoading ? 'Buscando...' : 'Buscar'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="lg:hidden shadow-soft"
+                  size="lg"
+                >
+                  <SlidersHorizontal className="w-4 h-4 mr-2" />
+                  Filtros
+                </Button>
               </div>
-              <Select value={capacity} onValueChange={setCapacity}>
-                <SelectTrigger>
-                  <div className="flex items-center">
-                    <Users className="w-4 h-4 mr-2 text-muted-foreground" />
-                    <SelectValue placeholder="Capacidad" />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="10-30">10-30 personas</SelectItem>
-                  <SelectItem value="30-50">30-50 personas</SelectItem>
-                  <SelectItem value="50-100">50-100 personas</SelectItem>
-                  <SelectItem value="100-200">100-200 personas</SelectItem>
-                  <SelectItem value="200+">200+ personas</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={handleSearch} disabled={isLoading}>
-                <Search className="w-4 h-4 mr-2" />
-                {isLoading ? 'Buscando...' : 'Buscar'}
-              </Button>
-              <Button 
-                variant="outline" 
-                onClick={() => setShowFilters(!showFilters)}
-                className="lg:hidden"
-              >
-                <SlidersHorizontal className="w-4 h-4 mr-2" />
-                Filtros
-              </Button>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between">
+          </CardContent>
+        </Card>
+        
+        {/* Resultados y ordenamiento */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
+          <div>
+            <h2 className="text-2xl font-semibold mb-2">Espacios Disponibles</h2>
             <p className="text-muted-foreground">
               {isLoading ? (
                 "Buscando espacios..."
@@ -188,35 +205,35 @@ const VenueSearch = () => {
                 `Se encontraron ${spaces.length} espacios disponibles`
               )}
             </p>
-            <Select defaultValue="featured">
-              <SelectTrigger className="w-48">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="featured">Más populares</SelectItem>
-                <SelectItem value="price-low">Precio menor</SelectItem>
-                <SelectItem value="price-high">Precio mayor</SelectItem>
-                <SelectItem value="rating">Mejor valorados</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
+          <Select defaultValue="featured">
+            <SelectTrigger className="w-48 h-10">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="featured">Más populares</SelectItem>
+              <SelectItem value="price-low">Precio menor</SelectItem>
+              <SelectItem value="price-high">Precio mayor</SelectItem>
+              <SelectItem value="rating">Mejor valorados</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         <div className="flex gap-8">
           {/* Filters Sidebar */}
           <div className={`w-80 space-y-6 ${showFilters ? 'block' : 'hidden lg:block'}`}>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-4 h-4" />
+            <Card className="shadow-card border-0 bg-gradient-card">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Filter className="w-5 h-5 text-primary" />
                   Filtros
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Price Range */}
-                <div>
-                  <h4 className="font-medium mb-3">Rango de Precio</h4>
-                  <div className="space-y-3">
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Rango de Precio</h4>
+                  <div className="space-y-4">
                     <Slider
                       value={priceRange}
                       onValueChange={setPriceRange}
@@ -224,21 +241,21 @@ const VenueSearch = () => {
                       step={50000}
                       className="w-full"
                     />
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>${priceRange[0].toLocaleString()}</span>
-                      <span>${priceRange[1].toLocaleString()}</span>
+                    <div className="flex justify-between text-sm text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+                      <span className="font-medium">${priceRange[0].toLocaleString()}</span>
+                      <span className="font-medium">${priceRange[1].toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Amenities */}
-                <div>
-                  <h4 className="font-medium mb-3">Servicios</h4>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Servicios</h4>
                   <div className="space-y-3">
                     {["WiFi Gratuito", "Estacionamiento", "Catering", "Sonido", "Iluminación", "Decoración"].map((amenity) => (
-                      <div key={amenity} className="flex items-center space-x-2">
-                        <Checkbox id={amenity} />
-                        <label htmlFor={amenity} className="text-sm">
+                      <div key={amenity} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-muted/20 transition-colors">
+                        <Checkbox id={amenity} className="border-2" />
+                        <label htmlFor={amenity} className="text-sm font-medium cursor-pointer flex-1">
                           {amenity}
                         </label>
                       </div>
@@ -247,10 +264,10 @@ const VenueSearch = () => {
                 </div>
 
                 {/* Event Type */}
-                <div>
-                  <h4 className="font-medium mb-3">Tipo de Evento</h4>
+                <div className="space-y-4">
+                  <h4 className="font-semibold text-foreground">Tipo de Evento</h4>
                   <Select>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-10 border-2 focus:border-primary/50">
                       <SelectValue placeholder="Selecciona tipo" />
                     </SelectTrigger>
                     <SelectContent>
@@ -268,42 +285,54 @@ const VenueSearch = () => {
           {/* Results Grid */}
           <div className="flex-1">
             {isLoading ? (
-              <div className="flex justify-center items-center py-16">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-600 mr-2" />
-                <span>Cargando espacios...</span>
+              <div className="flex flex-col justify-center items-center py-20">
+                <Loader2 className="w-12 h-12 animate-spin text-primary mb-4" />
+                <span className="text-lg font-medium">Cargando espacios...</span>
+                <span className="text-muted-foreground">Encontrando las mejores opciones para ti</span>
               </div>
             ) : error ? (
-              <div className="text-center py-16">
-                <Alert variant="destructive" className="max-w-md mx-auto">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>
+              <div className="text-center py-20">
+                <Alert variant="destructive" className="max-w-lg mx-auto shadow-card">
+                  <AlertCircle className="h-5 w-5" />
+                  <AlertDescription className="text-base">
                     {error}
                   </AlertDescription>
                 </Alert>
               </div>
             ) : spaces.length === 0 ? (
-              <div className="text-center py-16">
-                <h3 className="text-2xl font-semibold mb-4">No se encontraron espacios</h3>
-                <p className="text-muted-foreground">
-                  Intenta ajustar los filtros de búsqueda para encontrar más opciones.
-                </p>
+              <div className="text-center py-20">
+                <div className="max-w-md mx-auto">
+                  <Search className="w-16 h-16 mx-auto text-muted-foreground mb-6" />
+                  <h3 className="text-3xl font-bold mb-4">No se encontraron espacios</h3>
+                  <p className="text-lg text-muted-foreground mb-8">
+                    Intenta ajustar los filtros de búsqueda para encontrar más opciones.
+                  </p>
+                  <Button onClick={() => {
+                    setSearchTerm("");
+                    setLocation("");
+                    setCapacity("");
+                    setPriceRange([0, 1500000]);
+                  }} variant="outline" size="lg">
+                    Limpiar filtros
+                  </Button>
+                </div>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 animate-fade-in">
                   {spaces.map((space) => (
                     <VenueCard key={space.id} {...convertToVenueCard(space)} />
                   ))}
                 </div>
 
                 {/* Pagination */}
-                <div className="flex justify-center mt-12">
-                  <div className="flex gap-2">
-                    <Button variant="outline" disabled>Anterior</Button>
-                    <Button variant="default">1</Button>
-                    <Button variant="outline">2</Button>
-                    <Button variant="outline">3</Button>
-                    <Button variant="outline">Siguiente</Button>
+                <div className="flex justify-center mt-16">
+                  <div className="flex gap-2 p-2 bg-gradient-card rounded-xl shadow-card">
+                    <Button variant="outline" disabled size="lg">Anterior</Button>
+                    <Button variant="default" size="lg">1</Button>
+                    <Button variant="outline" size="lg">2</Button>
+                    <Button variant="outline" size="lg">3</Button>
+                    <Button variant="outline" size="lg">Siguiente</Button>
                   </div>
                 </div>
               </>
