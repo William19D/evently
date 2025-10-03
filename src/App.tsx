@@ -15,6 +15,7 @@ import OwnerLogin from "./pages/OwnerLogin";
 import ClientRegister from "./pages/ClientRegister";
 import OwnerRegister from "./pages/OwnerRegister";
 import EmailConfirmation from '@/pages/EmailConfirmation';
+import RecoverPassword from "./pages/RecoverPassword";
 
 import EventDetails from "./pages/EventDetails";
 import About from "./pages/About";
@@ -54,6 +55,9 @@ const App = () => (
               <Route path="/login/owner" element={<OwnerLogin />} />
               <Route path="/register/client" element={<ClientRegister />} />
               <Route path="/register/owner" element={<OwnerRegister />} />
+              <Route path="/RecoverPassword" element={<RecoverPassword />} />
+              <Route path="/recover-password" element={<RecoverPassword />} />
+              <Route path="/forgot-password" element={<RecoverPassword />} />
               <Route path="/email-confirmation" element={<EmailConfirmation />} />
               <Route path="/mfa-verification" element={<MfaVerification />} />
               

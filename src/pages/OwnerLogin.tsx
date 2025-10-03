@@ -273,7 +273,7 @@ const OwnerLogin = () => {
 
               <div className="flex items-center justify-end">
                 <Link 
-                  to="/forgot-password" 
+                  to="/recover-password" 
                   className="text-sm text-primary hover:underline transition-colors"
                 >
                   ¿Olvidaste tu contraseña?
