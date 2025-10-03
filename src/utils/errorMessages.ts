@@ -139,6 +139,21 @@ export function parseError(error: any): ParsedError {
       };
     }
 
+    // Errores de envío de correo de confirmación (mapear mensajes técnicos a uno amigable)
+    if (
+      lowerMessage.includes('sending confirmation') ||
+      lowerMessage.includes('error sending confirmation') ||
+      lowerMessage.includes('confirmation email') ||
+      (lowerMessage.includes('enviar') && lowerMessage.includes('confirm')) ||
+      lowerMessage.includes('no se pudo enviar') ||
+      lowerMessage.includes('error enviando')
+    ) {
+      return {
+        message: 'No se pudo enviar el correo de confirmación. Por favor intenta nuevamente más tarde.',
+        type: 'server'
+      };
+    }
+
     // Errores de MFA
     if (lowerMessage.includes('mfa') || lowerMessage.includes('2fa') || lowerMessage.includes('factor')) {
       return {

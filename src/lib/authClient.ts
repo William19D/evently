@@ -162,6 +162,46 @@ class AuthClient {
   private refreshToken: string | null = null;
   private user: AuthUser | null = null;
 
+  // Normalize error objects/messages into a clean string for UIs
+  private formatError(error: any): string {
+    try {
+      // If it's already a string
+      if (typeof error === 'string') return error;
+
+      // If it's an Error instance
+      if (error instanceof Error && typeof (error as any).message === 'string') {
+        // Try to pull JSON embedded in the message
+        const msg = (error as any).message;
+        try {
+          const parsed = JSON.parse(msg);
+          if (parsed?.error) return parsed.error;
+        } catch (_) {
+          // not JSON - continue
+        }
+        return msg;
+      }
+
+      // If it's an object returned from fetch errorText JSON
+      if (error && typeof error === 'object') {
+        if (typeof error.error === 'string') return error.error;
+        if (typeof error.message === 'string') {
+          // handle embedded JSON in message
+          try {
+            const parsed = JSON.parse(error.message);
+            if (parsed?.error) return parsed.error;
+          } catch (_) {
+            return error.message;
+          }
+        }
+      }
+
+      // Fallback to JSON stringify
+      return JSON.stringify(error);
+    } catch (e) {
+      return String(error);
+    }
+  }
+
   constructor() {
     if (typeof window !== 'undefined') {
       this.loadTokensFromStorage();
@@ -381,7 +421,7 @@ class AuthClient {
       };
     } catch (error) {
       console.error('❌ AuthClient signIn error with flag system:', error);
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -400,7 +440,7 @@ class AuthClient {
       // Para registro, NO guardamos tokens inmediatamente porque necesita verificación por email
       return result;
     } catch (error) {
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -414,7 +454,7 @@ class AuthClient {
 
       return result;
     } catch (error) {
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -427,7 +467,7 @@ class AuthClient {
 
       return result;
     } catch (error) {
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -510,7 +550,7 @@ class AuthClient {
 
       return result;
     } catch (error) {
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -567,7 +607,7 @@ class AuthClient {
       };
     } catch (error) {
       console.error('❌ AuthClient verifyMFALogin error with flag system:', error);
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -580,7 +620,7 @@ class AuthClient {
 
       return result;
     } catch (error) {
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -594,7 +634,7 @@ class AuthClient {
 
       return result;
     } catch (error) {
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
@@ -608,7 +648,7 @@ class AuthClient {
 
       return result;
     } catch (error) {
-      return { error: (error as Error).message };
+      return { error: this.formatError(error) };
     }
   }
 
