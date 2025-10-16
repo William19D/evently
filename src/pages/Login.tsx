@@ -281,7 +281,7 @@ const Login = () => {
             <div className="mt-6 space-y-4">
               <div className="text-center">
                 <Link 
-                  to="/forgot-password" 
+                  to="/recover-password" 
                   className="text-sm text-blue-600 hover:text-blue-500"
                 >
                   ¿Olvidaste tu contraseña?

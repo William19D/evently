@@ -111,8 +111,9 @@ const OwnerRegister = () => {
             email: "Este email ya está registrado. Intenta iniciar sesión."
           });
         } else {
+          const friendly = getDisplayError(result.error);
           setErrors({
-            general: result.error
+            general: friendly
           });
         }
       } else if (result.success) {
