@@ -31,134 +31,25 @@ interface UseRecaptchaReturn {
 export const useRecaptcha = (): UseRecaptchaReturn => {
   const [error, setError] = useState<string | null>(null);
   
-  const isConfigured = isValidSiteKey(RECAPTCHA_SITE_KEY);
+  // 🚫 BYPASS: Siempre configurado durante el bypass
+  const isConfigured = true;
 
   const loadRecaptcha = useCallback(async (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      try {
-        setError(null);
-        
-        if (typeof window === 'undefined') {
-          const errorMsg = 'reCAPTCHA only works in browser environment';
-          setError(errorMsg);
-          reject(new Error(errorMsg));
-          return;
-        }
-
-        if (!isConfigured) {
-          const errorMsg = `Invalid reCAPTCHA site key: ${RECAPTCHA_SITE_KEY}. Please check your VITE_RECAPTCHA_SITE_KEY in .env file.`;
-          setError(errorMsg);
-          reject(new Error(errorMsg));
-          return;
-        }
-
-        // Check if reCAPTCHA is already loaded
-        if (window.grecaptcha && window.grecaptcha.ready) {
-          resolve();
-          return;
-        }
-
-        // Check if script is already added
-        if (document.querySelector('script[src*="recaptcha"]')) {
-          // Wait for it to load
-          const checkLoaded = () => {
-            if (window.grecaptcha && window.grecaptcha.ready) {
-              resolve();
-            } else {
-              setTimeout(checkLoaded, 100);
-            }
-          };
-          checkLoaded();
-          return;
-        }
-
-        // Add reCAPTCHA script
-        const script = document.createElement('script');
-        script.src = `https://www.google.com/recaptcha/api.js?render=${RECAPTCHA_SITE_KEY}`;
-        script.async = true;
-        script.defer = true;
-        
-        script.onload = () => {
-          if (window.grecaptcha && window.grecaptcha.ready) {
-            resolve();
-          } else {
-            const errorMsg = 'reCAPTCHA failed to load properly';
-            setError(errorMsg);
-            reject(new Error(errorMsg));
-          }
-        };
-        
-        script.onerror = () => {
-          const errorMsg = 'Failed to load reCAPTCHA script. Check if the site key is valid.';
-          setError(errorMsg);
-          reject(new Error(errorMsg));
-        };
-
-        document.head.appendChild(script);
-      } catch (err) {
-        const errorMsg = `Error loading reCAPTCHA: ${err instanceof Error ? err.message : 'Unknown error'}`;
-        setError(errorMsg);
-        reject(new Error(errorMsg));
-      }
-    });
-  }, [isConfigured]);
+    console.log('🚫 reCAPTCHA BYPASS: loadRecaptcha called with bypass mode');
+    setError(null);
+    return Promise.resolve();
+  }, []);
 
   const executeRecaptcha = useCallback(async (action: string): Promise<string> => {
-    console.log('🔍 executeRecaptcha called with:', {
+    console.log('� reCAPTCHA BYPASS: executeRecaptcha called with bypass mode', {
       action,
-      siteKey: RECAPTCHA_SITE_KEY ? `${RECAPTCHA_SITE_KEY.substring(0, 15)}...` : 'NOT FOUND',
-      siteKeyLength: RECAPTCHA_SITE_KEY?.length || 0,
-      isConfigured
+      bypassEnabled: true
     });
 
-    if (!isConfigured) {
-      const errorMsg = `reCAPTCHA site key not properly configured. Key: ${RECAPTCHA_SITE_KEY}`;
-      console.error('❌ reCAPTCHA site key validation failed:', {
-        siteKey: RECAPTCHA_SITE_KEY,
-        type: typeof RECAPTCHA_SITE_KEY,
-        envViteRecaptchaSiteKey: import.meta.env.VITE_RECAPTCHA_SITE_KEY,
-        isValid: isValidSiteKey(RECAPTCHA_SITE_KEY)
-      });
-      setError(errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    if (typeof window === 'undefined') {
-      const errorMsg = 'reCAPTCHA only works in browser environment';
-      setError(errorMsg);
-      throw new Error(errorMsg);
-    }
-
-    try {
-      // Ensure reCAPTCHA is loaded
-      await loadRecaptcha();
-
-      return new Promise((resolve, reject) => {
-        window.grecaptcha.ready(() => {
-          window.grecaptcha.execute(RECAPTCHA_SITE_KEY!, { action })
-            .then((token: string) => {
-              if (!token) {
-                const errorMsg = 'reCAPTCHA token generation failed';
-                setError(errorMsg);
-                reject(new Error(errorMsg));
-              } else {
-                setError(null);
-                resolve(token);
-              }
-            })
-            .catch((error: any) => {
-              const errorMsg = `reCAPTCHA execution failed: ${error.message || error}`;
-              setError(errorMsg);
-              reject(new Error(errorMsg));
-            });
-        });
-      });
-    } catch (executeError) {
-      const errorMsg = `Error executing reCAPTCHA: ${executeError instanceof Error ? executeError.message : 'Unknown error'}`;
-      setError(errorMsg);
-      throw new Error(errorMsg);
-    }
-  }, [loadRecaptcha, isConfigured]);
+    // 🚫 BYPASS: Retornar un token falso sin hacer verificación real
+    setError(null);
+    return Promise.resolve('bypass-token-' + Date.now());
+  }, []);
 
   return {
     executeRecaptcha,

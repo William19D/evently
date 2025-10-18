@@ -83,12 +83,7 @@ const OwnerLogin = () => {
             description: "Ingresa tu código de autenticación de dos factores",
           });
         } else {
-          // Regular login success
-          toast({
-            title: "¡Bienvenido Propietario!",
-            description: "Has iniciado sesión exitosamente",
-          });
-          
+          // Regular login success - El mensaje de éxito se muestra en AuthContext
           // Redirect to owner dashboard after a short delay to ensure context is updated
           setTimeout(() => {
             navigate('/dashboard');
@@ -146,10 +141,7 @@ const OwnerLogin = () => {
 
   const handleMfaSuccess = () => {
     setShowMfaDialog(false);
-    toast({
-      title: "¡Bienvenido Propietario!",
-      description: "Has iniciado sesión exitosamente",
-    });
+    // El mensaje de éxito MFA se muestra en AuthContext
     
     // Navigate to owner dashboard
     navigate('/dashboard');

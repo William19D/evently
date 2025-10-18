@@ -458,6 +458,35 @@ class AuthClient {
     }
   }
 
+  async verifyEmailWithAutoLogin(token: string, type: string = 'signup'): Promise<AuthResponse> {
+    try {
+      console.log('🔄 AuthClient: verifyEmailWithAutoLogin called', { hasToken: !!token, type });
+      
+      const result = await this.makeRequest({
+        action: 'verify-email-auto-login',
+        token: token,
+        type: type
+      }, false);
+
+      console.log('🔍 AuthClient: verifyEmailWithAutoLogin response', {
+        success: result.success,
+        hasUser: !!result.user,
+        hasTokens: !!(result.accessToken && result.refreshToken)
+      });
+
+      // Si la verificación fue exitosa y tenemos tokens, guardarlos
+      if (result.success && result.accessToken && result.refreshToken && result.user) {
+        this.saveTokensToStorage(result.accessToken, result.refreshToken, result.user);
+        console.log('✅ Tokens saved after email verification auto-login');
+      }
+
+      return result;
+    } catch (error) {
+      console.error('❌ verifyEmailWithAutoLogin error:', error);
+      return { error: this.formatError(error) };
+    }
+  }
+
   async resendVerification(data: ResendVerificationRequest): Promise<AuthResponse> {
     try {
       const result = await this.makeRequest({

@@ -15,6 +15,7 @@ import OwnerLogin from "./pages/OwnerLogin";
 import ClientRegister from "./pages/ClientRegister";
 import OwnerRegister from "./pages/OwnerRegister";
 import EmailConfirmation from '@/pages/EmailConfirmation';
+import AuthCallback from '@/pages/AuthCallback';
 import RecoverPassword from "./pages/RecoverPassword";
 
 import EventDetails from "./pages/EventDetails";
@@ -35,6 +36,7 @@ import SuperadminDashboard from "./pages/SuperadminDashboard";
 import PublicSpaces from "./pages/PublicSpaces";
 import PublicSpaceDetail from "./pages/PublicSpaceDetail";
 import PublicSpacesTest from "./components/PublicSpacesTest";
+import EmailVerificationHandler from "./components/EmailVerificationHandler";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +48,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <EmailVerificationHandler />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/search" element={<VenueSearch />} />
@@ -59,6 +62,7 @@ const App = () => (
               <Route path="/recover-password" element={<RecoverPassword />} />
               <Route path="/forgot-password" element={<RecoverPassword />} />
               <Route path="/email-confirmation" element={<EmailConfirmation />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/mfa-verification" element={<MfaVerification />} />
               
               {/* Legacy routes for backwards compatibility */}

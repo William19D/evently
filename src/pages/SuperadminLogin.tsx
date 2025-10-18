@@ -90,10 +90,7 @@ const SuperadminLogin = () => {
         // Verificar que el usuario tenga rol de superadmin
         const currentUser = authClient.getCurrentUser();
         if (currentUser && currentUser.role === 'superadmin') {
-          toast({
-            title: "¡Bienvenido Superadministrador!",
-            description: "Has iniciado sesión correctamente.",
-          });
+          // El mensaje de éxito se muestra en AuthContext
           navigate("/superadmin/dashboard");
         } else {
           setErrors({

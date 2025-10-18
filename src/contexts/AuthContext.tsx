@@ -71,6 +71,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (result.success) {
         logAuthStep('SETUP_MFA_SUCCESS', { userId: user.id });
+        
+        // Mostrar mensaje de éxito para configuración MFA
+        toast.success('¡MFA configurado exitosamente!', {
+          description: 'La autenticación de dos factores ha sido configurada correctamente.'
+        });
       } else {
         logAuthError('SETUP_MFA_FAILED', { error: result.error });
         
@@ -114,6 +119,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (result.success) {
         logAuthStep('VERIFY_MFA_SETUP_SUCCESS', { userId: user.id });
         setIsMfaEnabled(true);
+        
+        // Mostrar mensaje de éxito para verificación MFA
+        toast.success('¡MFA verificado exitosamente!', {
+          description: 'La autenticación de dos factores está ahora activa en tu cuenta.'
+        });
       } else {
         logAuthError('VERIFY_MFA_SETUP_FAILED', { error: result.error });
         
@@ -204,6 +214,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return { error: 'Error en autenticación post-MFA - tokens faltantes' };
         }
         
+        // Mostrar mensaje de éxito para MFA
+        toast.success('🎉 Autenticación MFA completada!', {
+          description: result.message || 'Autenticación de dos factores verificada correctamente.'
+        });
+        
       } else {
         logAuthError('VERIFY_MFA_LOGIN_FAILED', { error: result.error });
         console.log('❌ MFA verification failed:', result.error);
@@ -275,6 +290,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (result.success) {
         logAuthStep('DISABLE_MFA_SUCCESS', { userId: user.id });
         setIsMfaEnabled(false);
+        
+        // Mostrar mensaje de éxito para desactivación MFA
+        toast.success('MFA desactivado', {
+          description: 'La autenticación de dos factores ha sido desactivada de tu cuenta.'
+        });
       } else {
         logAuthError('DISABLE_MFA_FAILED', { error: result.error });
       }
@@ -298,6 +318,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (result.success) {
         logAuthStep('GENERATE_BACKUP_CODES_SUCCESS', { userId: user.id });
+        
+        // Mostrar mensaje de éxito para códigos de respaldo
+        toast.success('Códigos de respaldo generados', {
+          description: 'Se han generado nuevos códigos de respaldo para tu cuenta.'
+        });
       } else {
         logAuthError('GENERATE_BACKUP_CODES_FAILED', { error: result.error });
       }
@@ -441,6 +466,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
         
+        // Mostrar mensaje de éxito
+        toast.success('¡Autenticación exitosa!', {
+          description: '¡Bienvenido de vuelta! Has iniciado sesión correctamente.'
+        });
+        
         return { success: true };
       }
 
@@ -501,6 +531,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: friendlyError };
       }
       
+      // Mostrar mensaje de éxito para registro
+      toast.success('¡Registro exitoso!', {
+        description: response.message || 'Tu cuenta ha sido creada. Revisa tu email para confirmar tu cuenta.'
+      });
+      
       return { success: true };
     } catch (error: any) {
       // Usar el sistema de manejo de errores user-friendly
@@ -536,6 +571,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: friendlyError };
       }
       
+      // Mostrar mensaje de éxito para verificación de email
+      toast.success('¡Email verificado exitosamente!', {
+        description: 'Tu cuenta ha sido verificada. Ya puedes iniciar sesión.'
+      });
+      
       return { success: true };
     } catch (error: any) {
       // Usar el sistema de manejo de errores user-friendly
@@ -567,6 +607,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         return { success: false, error: friendlyError };
       }
+      
+      // Mostrar mensaje de éxito para reenvío
+      toast.success('¡Email reenviado!', {
+        description: result.message || 'Se ha enviado un nuevo enlace de confirmación a tu email.'
+      });
       
       return { success: true };
     } catch (error: any) {

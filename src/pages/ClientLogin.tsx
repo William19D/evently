@@ -122,10 +122,7 @@ const ClientLogin = () => {
       // ✅ Check for successful login without MFA
       if (result.success && !result.mfaRequired) {
         console.log('✅ ClientLogin: Login successful without MFA');
-        toast({
-          title: "¡Bienvenido Cliente!",
-          description: "Has iniciado sesión correctamente.",
-        });
+        // El mensaje de éxito se muestra en AuthContext, no duplicar aquí
         navigate("/");
         setIsLoading(false);
         return;
