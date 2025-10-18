@@ -49,7 +49,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = () => {
             setMessage('¡Email verificado y autenticación completada exitosamente!');
             
             toast.success('¡Autenticación exitosa!', {
-              description: '¡Bienvenido! Tu email ha sido verificado y has iniciado sesión automáticamente.'
+              description: '¡Bienvenido! Tu email ha sido verificado.'
             });
 
             // Redirigir según el rol del usuario después de 2 segundos
@@ -97,7 +97,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = () => {
               setMessage('¡Email verificado y autenticación completada exitosamente!');
               
               toast.success('¡Autenticación exitosa!', {
-                description: '¡Bienvenido! Tu email ha sido verificado y has iniciado sesión automáticamente.'
+                description: '¡Bienvenido! Tu email ha sido verificado.'
               });
 
               // Redirigir según el rol del usuario después de 2 segundos
@@ -165,7 +165,7 @@ const AuthCallback: React.FC<AuthCallbackProps> = () => {
           
           // Mostrar mensaje de éxito
           toast.success('¡Autenticación exitosa!', {
-            description: '¡Bienvenido! Tu email ha sido verificado y has iniciado sesión automáticamente.'
+            description: '¡Bienvenido! Tu email ha sido verificado.'
           });
 
           // Redirigir según el rol del usuario después de 2 segundos

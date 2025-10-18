@@ -55,7 +55,7 @@ export const useEmailVerificationHandler = () => {
 
           // Mostrar mensaje de éxito
           toast.success('¡Verificación exitosa!', {
-            description: '¡Bienvenido! Tu email ha sido verificado y has iniciado sesión automáticamente.',
+            description: '¡Bienvenido! Tu email ha sido verificado.',
             duration: 5000
           });
 
