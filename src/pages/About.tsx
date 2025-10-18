@@ -47,38 +47,7 @@ const About = () => {
           </Card>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-          <div className="text-center">
-            <div className="flex justify-center mb-3">
-              <MapPin className="w-8 h-8 text-primary" />
-            </div>
-            <div className="text-3xl font-bold text-foreground">15+</div>
-            <div className="text-sm text-muted-foreground">Ciudades</div>
-          </div>
-          <div className="text-center">
-            <div className="flex justify-center mb-3">
-              <Users className="w-8 h-8 text-primary" />
-            </div>
-            <div className="text-3xl font-bold text-foreground">-</div>
-            <div className="text-sm text-muted-foreground">Espacios</div>
-          </div>
-          <div className="text-center">
-            <div className="flex justify-center mb-3">
-              <Calendar className="w-8 h-8 text-primary" />
-            </div>
-            <div className="text-3xl font-bold text-foreground">-</div>
-            <div className="text-sm text-muted-foreground">Eventos</div>
-          </div>
-          <div className="text-center">
-            <div className="flex justify-center mb-3">
-              <Award className="w-8 h-8 text-primary" />
-            </div>
-            <div className="text-3xl font-bold text-foreground">-</div>
-            <div className="text-sm text-muted-foreground">Satisfacción</div>
-          </div>
-        </div>
-
+        
         {/* Values */}
         <div className="mb-16">
           <div className="text-center mb-12">

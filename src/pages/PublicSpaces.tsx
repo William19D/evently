@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Navigation from "@/components/Navigation";
+import Breadcrumb from "@/components/Breadcrumb";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   MapPin, 
@@ -134,19 +135,15 @@ const PublicSpaces = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
       {/* Navbar */}
       <Navigation />
 
-      {/* Header */}
+      {/* Header con Breadcrumb */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900">Espacios Disponibles</h1>
-            <p className="mt-2 text-gray-600">
-              Descubre los mejores espacios para tus eventos
-            </p>
-          </div>
+          <Breadcrumb className="mb-4" />
+          
         </div>
       </div>
 

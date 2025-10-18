@@ -6,12 +6,14 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
 import Navigation from "@/components/Navigation";
+import Breadcrumb from "@/components/Breadcrumb";
+import PageLayout from "@/components/PageLayout";
 import { useAuth } from "@/contexts/AuthContext";
+import ReservationModal from "@/components/ReservationModal";
 import { 
   MapPin, 
   Users, 
   Star,
-  ArrowLeft,
   Building2,
   Calendar,
   DollarSign,
@@ -41,6 +43,7 @@ const PublicSpaceDetail = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [isInterested, setIsInterested] = useState(false);
+  const [showReservationModal, setShowReservationModal] = useState(false);
 
   // Manejar interés en el espacio (usuarios no autenticados)
   const handleInterest = () => {
@@ -56,9 +59,7 @@ const PublicSpaceDetail = () => {
 
   // Manejar reserva (usuarios autenticados)
   const handleReservation = () => {
-    sonnerToast.info("Función de reserva", {
-      description: "Esta funcionalidad estará disponible próximamente"
-    });
+    setShowReservationModal(true);
   };
 
   // Cargar detalles del espacio
@@ -179,29 +180,19 @@ const PublicSpaceDetail = () => {
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
-      <Navigation />
-      {/* Header con navegación */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center gap-4">
-            <Link to="/spaces">
-              <Button variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Volver a Espacios
-              </Button>
-            </Link>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{space.name}</h1>
-              <p className="text-gray-600">{space.location}</p>
-            </div>
-          </div>
-        </div>
-      </div>
+  const headerContent = (
+    <div>
+      <h1 className="text-2xl font-bold text-gray-900">{space.name}</h1>
+      <p className="text-gray-600 flex items-center mt-1">
+        <MapPin className="w-4 h-4 mr-1" />
+        {space.location}
+      </p>
+    </div>
+  );
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  return (
+    <PageLayout headerContent={headerContent}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Columna principal */}
           <div className="lg:col-span-2 space-y-6">
             {/* Galería de fotos */}
@@ -478,8 +469,16 @@ const PublicSpaceDetail = () => {
             </Card>
           </div>
         </div>
-      </div>
-    </div>
+
+      {/* Modal de Reserva */}
+      {space && (
+        <ReservationModal
+          isOpen={showReservationModal}
+          onClose={() => setShowReservationModal(false)}
+          space={space}
+        />
+      )}
+    </PageLayout>
   );
 };
 

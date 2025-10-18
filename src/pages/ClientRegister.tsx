@@ -15,6 +15,8 @@ import { authClient } from "@/lib/authClient";
 import { getDisplayError } from "@/utils/errorMessages";
 import RecaptchaBadge from "@/components/RecaptchaBadge";
 import RecaptchaConfigError from "@/components/RecaptchaConfigError";
+import Navigation from "@/components/Navigation";
+import Breadcrumb from "@/components/Breadcrumb";
 import authBackground from "@/assets/auth-background.jpg";
 
 const ClientRegister = () => {

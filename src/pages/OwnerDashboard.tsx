@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import Navigation from "@/components/Navigation";
+import Breadcrumb from "@/components/Breadcrumb";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -404,6 +405,13 @@ const OwnerDashboard = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Navigation />
+      
+      {/* Breadcrumb */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Breadcrumb />
+        </div>
+      </div>
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}

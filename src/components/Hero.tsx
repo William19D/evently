@@ -89,25 +89,6 @@ const Hero = () => {
               </div>
             </div>
           </div>
-
-          {/* Quick Categories */}
-          <div className="flex flex-wrap justify-center gap-3 mt-6">
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
-              <Link to="/spaces">Ver Todos los Espacios</Link>
-            </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
-              <Link to="/search">Bodas</Link>
-            </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
-              <Link to="/search">Conferencias</Link>
-            </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
-              <Link to="/search">Cumpleaños</Link>
-            </Button>
-            <Button variant="outline" className="bg-white/10 border-white/20 text-white hover:bg-white/20" asChild>
-              <Link to="/search">Eventos Corporativos</Link>
-            </Button>
-          </div>
         </div>
       </div>
     </section>

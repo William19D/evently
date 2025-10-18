@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Search, User, Menu, Calendar, MapPin, ChevronDown, Building2, LogOut, Shield, Settings, Users } from "lucide-react";
+import { User, Menu, ChevronDown, Building2, LogOut, Shield, Settings, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -52,44 +52,12 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             <Link 
-              to="/search" 
-              className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-1"
-            >
-              <Search className="w-4 h-4" />
-              <span>Buscar</span>
-            </Link>
-
-            <Link 
               to="/spaces" 
               className="text-muted-foreground hover:text-foreground transition-colors flex items-center space-x-1"
             >
               <Building2 className="w-4 h-4" />
               <span>Espacios</span>
             </Link>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="text-muted-foreground hover:text-foreground transition-colors">
-                  <Calendar className="w-4 h-4 mr-1" />
-                  Categorías
-                  <ChevronDown className="w-4 h-4 ml-1" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem asChild>
-                  <Link to="/search?category=conferences">Conferencias</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/search?category=weddings">Bodas</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/search?category=corporate">Corporativo</Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/search?category=social">Social</Link>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
 
             <Link 
               to="/about" 
@@ -98,12 +66,7 @@ const Navigation = () => {
               Nosotros
             </Link>
 
-            <Link 
-              to="/contact" 
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Contacto
-            </Link>
+
           </div>
 
           {/* Auth Section */}
@@ -230,15 +193,6 @@ const Navigation = () => {
           <div className="md:hidden">
             <div className="px-2 pt-2 pb-3 space-y-1 border-t border-border">
               <Link
-                to="/search"
-                className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Search className="w-4 h-4 inline mr-2" />
-                Buscar Espacios
-              </Link>
-              
-              <Link
                 to="/spaces"
                 className="block px-3 py-2 text-muted-foreground hover:text-foreground transition-colors"
                 onClick={() => setIsMenuOpen(false)}
@@ -246,40 +200,6 @@ const Navigation = () => {
                 <Building2 className="w-4 h-4 inline mr-2" />
                 Espacios Disponibles
               </Link>
-              
-              <div className="px-3 py-2">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Categorías</p>
-                <div className="space-y-1 ml-4">
-                  <Link
-                    to="/search?category=conferences"
-                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Conferencias
-                  </Link>
-                  <Link
-                    to="/search?category=weddings"
-                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Bodas
-                  </Link>
-                  <Link
-                    to="/search?category=corporate"
-                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Corporativo
-                  </Link>
-                  <Link
-                    to="/search?category=social"
-                    className="block text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Social
-                  </Link>
-                </div>
-              </div>
 
               <Link
                 to="/about"

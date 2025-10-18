@@ -18,6 +18,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useRecaptcha } from '@/hooks/use-recaptcha';
 import { useToast } from '@/hooks/use-toast';
 import MfaLogin from '@/components/MfaLogin';
+import Navigation from '@/components/Navigation';
+import Breadcrumb from '@/components/Breadcrumb';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -187,12 +189,21 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900">Iniciar Sesión</h1>
-          <p className="text-gray-600 mt-2">Accede a tu cuenta de Evently</p>
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+      <Navigation />
+      
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <Breadcrumb />
         </div>
+      </div>
+      
+      <div className="flex items-center justify-center min-h-[calc(100vh-200px)] p-4">
+        <div className="w-full max-w-md space-y-6">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900">Iniciar Sesión</h1>
+            <p className="text-gray-600 mt-2">Accede a tu cuenta de Evently</p>
+          </div>
 
         <Card>
           <CardHeader>
@@ -321,6 +332,7 @@ const Login = () => {
           </p>
         </div>
       </div>
+    </div>
     </div>
   );
 };
