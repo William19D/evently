@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import Navigation from "@/components/Navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   MapPin, 
   Users, 
@@ -22,9 +24,12 @@ import {
 } from "lucide-react";
 import { publicSpacesClient, type PublicSpace, type PublicSpacesFilters } from "@/lib/publicSpacesClient";
 import { useToast } from "@/hooks/use-toast";
-import Navigation from "@/components/Navigation"; // Importar el componente de navegación
 
 const PublicSpaces = () => {
+  const navigate = useNavigate();
+  const { user, isFullyAuthenticated } = useAuth();
+  const { toast } = useToast();
+  
   const [spaces, setSpaces] = useState<PublicSpace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -43,7 +48,6 @@ const PublicSpaces = () => {
     has_prev: false
   });
   const [showFilters, setShowFilters] = useState(false);
-  const { toast } = useToast();
 
   // Cargar espacios
   const loadSpaces = async () => {
@@ -282,14 +286,17 @@ const PublicSpaces = () => {
                       </div>
                       
                       {/* Precio */}
-                      <div className="flex items-center gap-1 text-lg font-semibold text-purple-600">
+                      <div className="flex items-center gap-1 text-lg font-semibold text-[#f1893f]">
                         <DollarSign className="w-5 h-5" />
                         <span>{space.price_formatted}/hora</span>
                       </div>
                       
                       {/* Botón de ver más */}
                       <Link to={`/spaces/${space.id}`} className="block">
-                        <Button className="w-full mt-3" variant="outline">
+                        <Button 
+                          className="w-full mt-3 bg-[#f1893f] hover:bg-[#e17a36] text-white border-0" 
+                          variant="default"
+                        >
                           Ver Detalles
                         </Button>
                       </Link>

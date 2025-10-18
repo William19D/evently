@@ -5,6 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import Navigation from "@/components/Navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { 
   MapPin, 
   Users, 
@@ -21,19 +23,43 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
-  MessageSquare
+  MessageSquare,
+  Heart,
+  CalendarCheck
 } from "lucide-react";
 import { publicSpacesClient, type PublicSpace } from "@/lib/publicSpacesClient";
 import { useToast } from "@/hooks/use-toast";
+import { toast as sonnerToast } from "sonner";
 
 const PublicSpaceDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user, isFullyAuthenticated } = useAuth();
   
   const [space, setSpace] = useState<PublicSpace | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [isInterested, setIsInterested] = useState(false);
+
+  // Manejar interés en el espacio (usuarios no autenticados)
+  const handleInterest = () => {
+    if (!isInterested) {
+      setIsInterested(true);
+      sonnerToast.success("¡Perfecto! Te gustaría reservar este espacio", {
+        description: "Regístrate para poder hacer reservas reales"
+      });
+    } else {
+      sonnerToast.info("Ya marcaste interés en este espacio");
+    }
+  };
+
+  // Manejar reserva (usuarios autenticados)
+  const handleReservation = () => {
+    sonnerToast.info("Función de reserva", {
+      description: "Esta funcionalidad estará disponible próximamente"
+    });
+  };
 
   // Cargar detalles del espacio
   useEffect(() => {
@@ -125,10 +151,13 @@ const PublicSpaceDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600 mx-auto mb-4" />
-          <p className="text-gray-600">Cargando detalles del espacio...</p>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <Loader2 className="w-8 h-8 animate-spin text-[#f1893f] mx-auto mb-4" />
+            <p className="text-gray-600">Cargando detalles del espacio...</p>
+          </div>
         </div>
       </div>
     );
@@ -136,19 +165,23 @@ const PublicSpaceDetail = () => {
 
   if (!space) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50 flex items-center justify-center">
-        <Alert className="max-w-md">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>
-            No se pudo encontrar el espacio solicitado.
-          </AlertDescription>
-        </Alert>
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+        <Navigation />
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <Alert className="max-w-md">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              No se pudo encontrar el espacio solicitado.
+            </AlertDescription>
+          </Alert>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-pink-50">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+      <Navigation />
       {/* Header con navegación */}
       <div className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -187,7 +220,7 @@ const PublicSpaceDetail = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90"
+                          className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-[#f1893f] hover:text-white border-[#f1893f]"
                           onClick={handlePreviousPhoto}
                         >
                           <ChevronLeft className="w-4 h-4" />
@@ -195,7 +228,7 @@ const PublicSpaceDetail = () => {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90"
+                          className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/90 hover:bg-[#f1893f] hover:text-white border-[#f1893f]"
                           onClick={handleNextPhoto}
                         >
                           <ChevronRight className="w-4 h-4" />
@@ -221,8 +254,8 @@ const PublicSpaceDetail = () => {
                         <button
                           key={photo.id}
                           onClick={() => setCurrentPhotoIndex(index)}
-                          className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden ${
-                            index === currentPhotoIndex ? 'border-purple-600' : 'border-gray-200'
+                          className={`flex-shrink-0 w-16 h-16 rounded border-2 overflow-hidden transition-all ${
+                            index === currentPhotoIndex ? 'border-[#f1893f] shadow-md' : 'border-gray-200 hover:border-[#f1893f]/50'
                           }`}
                         >
                           <img
@@ -288,7 +321,7 @@ const PublicSpaceDetail = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {space.reviews.map((review) => (
-                    <div key={review.id} className="border-l-4 border-l-purple-200 pl-4">
+                    <div key={review.id} className="border-l-4 border-l-[#f1893f]/30 pl-4 bg-orange-50/50 p-3 rounded-r-lg">
                       <div className="flex items-center gap-2 mb-2">
                         <div className="flex">
                           {renderStars(review.rating)}
@@ -337,7 +370,7 @@ const PublicSpaceDetail = () => {
                     <DollarSign className="w-4 h-4" />
                     Precio:
                   </span>
-                  <span className="font-bold text-purple-600 text-lg">
+                  <span className="font-bold text-[#f1893f] text-lg">
                     {space.price_formatted}/hora
                   </span>
                 </div>
@@ -373,25 +406,57 @@ const PublicSpaceDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Call to Action */}
+            {/* Call to Action - Condicional basado en autenticación */}
             <Card>
               <CardContent className="p-6 text-center">
-                <h3 className="font-semibold text-lg mb-2">¿Te interesa este espacio?</h3>
-                <p className="text-gray-600 text-sm mb-4">
-                  Regístrate para poder reservar este espacio y muchos más.
-                </p>
-                <div className="space-y-2">
-                  <Link to="/register" className="block">
-                    <Button className="w-full" size="lg">
-                      Registrarse
+                {isFullyAuthenticated() ? (
+                  // Usuario autenticado - Botón de reservar
+                  <>
+                    <h3 className="font-semibold text-lg mb-2">¡Reserva este espacio!</h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Haz tu reserva ahora y asegura este increíble espacio.
+                    </p>
+                    <Button 
+                      className="w-full bg-[#f1893f] hover:bg-[#e17a36] text-white" 
+                      size="lg"
+                      onClick={handleReservation}
+                    >
+                      <CalendarCheck className="w-5 h-5 mr-2" />
+                      Reservar Ahora
                     </Button>
-                  </Link>
-                  <Link to="/login" className="block">
-                    <Button variant="outline" className="w-full">
-                      Iniciar Sesión
-                    </Button>
-                  </Link>
-                </div>
+                  </>
+                ) : (
+                  // Usuario no autenticado - Botón de interés y registro
+                  <>
+                    <h3 className="font-semibold text-lg mb-2">¿Te interesa este espacio?</h3>
+                    <p className="text-gray-600 text-sm mb-4">
+                      Regístrate para poder reservar este espacio y muchos más.
+                    </p>
+                    <div className="space-y-3">
+                      <Button 
+                        className="w-full bg-[#f1893f]/10 hover:bg-[#f1893f]/20 text-[#f1893f] border border-[#f1893f]" 
+                        size="lg"
+                        onClick={handleInterest}
+                        variant="outline"
+                      >
+                        <Heart className={`w-5 h-5 mr-2 ${isInterested ? 'fill-current' : ''}`} />
+                        {isInterested ? '¡Me interesa!' : 'Me interesa este espacio'}
+                      </Button>
+                      <div className="flex gap-2">
+                        <Link to="/register" className="flex-1">
+                          <Button className="w-full bg-[#f1893f] hover:bg-[#e17a36] text-white">
+                            Registrarse
+                          </Button>
+                        </Link>
+                        <Link to="/login" className="flex-1">
+                          <Button variant="outline" className="w-full border-[#f1893f] text-[#f1893f] hover:bg-[#f1893f] hover:text-white">
+                            Iniciar Sesión
+                          </Button>
+                        </Link>
+                      </div>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
 
