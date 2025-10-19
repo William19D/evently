@@ -14,6 +14,7 @@ import { Separator } from "@/components/ui/separator";
 import Navigation from "@/components/Navigation";
 import Breadcrumb from "@/components/Breadcrumb";
 import Footer from "@/components/Footer";
+import { OwnerReservationManager } from "@/components/OwnerReservationManager";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { spacesClient } from "@/lib/spacesClient";
@@ -37,7 +38,8 @@ import {
   Star,
   MessageSquare,
   BarChart3,
-  Settings
+  Settings,
+  CalendarCheck
 } from "lucide-react";
 
 const OwnerDashboard = () => {
@@ -85,6 +87,7 @@ const OwnerDashboard = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingSpace, setEditingSpace] = useState<any>(null);
   const [editFormData, setEditFormData] = useState<any>({});
+  const [activeMainTab, setActiveMainTab] = useState('spaces');
 
   // 🔥 EFECTO PRINCIPAL: Solo para autenticación y carga inicial
   useEffect(() => {
@@ -487,42 +490,56 @@ const OwnerDashboard = () => {
           </Card>
         </div>
 
-        {/* Spaces Management */}
-        <Card>
-          <CardHeader>
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-              <div>
-                <CardTitle>Mis Espacios</CardTitle>
-                <CardDescription>
-                  Gestiona y monitorea todos tus espacios registrados
-                </CardDescription>
-              </div>
-              <div className="mt-4 md:mt-0 flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => loadAllSpaces(true)}
-                  disabled={isLoading}
-                >
-                  🔄 Actualizar
-                </Button>
-                <Tabs value={selectedStatus} onValueChange={(value: any) => {
-                  console.log('🔄 Filtering locally to:', value, '(NO server request)');
-                  setSelectedStatus(value);
-                  setCurrentPage(1);
-                  // El filtrado se hace automáticamente por el useEffect que escucha selectedStatus
-                  // ESTO NO HACE LLAMADAS AL SERVIDOR - solo filtra allSpaces localmente
-                }} className="w-full md:w-auto">
-                  <TabsList className="grid w-full md:w-auto grid-cols-4">
-                    <TabsTrigger value="all">Todos</TabsTrigger>
-                    <TabsTrigger value="approved">Aprobados</TabsTrigger>
-                    <TabsTrigger value="pending">Pendientes</TabsTrigger>
-                    <TabsTrigger value="rejected">Rechazados</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-            </div>
-          </CardHeader>
+        {/* Main Content Tabs */}
+        <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-6">
+            <TabsTrigger value="spaces" className="flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Mis Espacios
+            </TabsTrigger>
+            <TabsTrigger value="reservations" className="flex items-center gap-2">
+              <CalendarCheck className="w-4 h-4" />
+              Reservas
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab Content: Spaces Management */}
+          <TabsContent value="spaces">
+            <Card>
+              <CardHeader>
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                  <div>
+                    <CardTitle>Mis Espacios</CardTitle>
+                    <CardDescription>
+                      Gestiona y monitorea todos tus espacios registrados
+                    </CardDescription>
+                  </div>
+                  <div className="mt-4 md:mt-0 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => loadAllSpaces(true)}
+                      disabled={isLoading}
+                    >
+                      🔄 Actualizar
+                    </Button>
+                    <Tabs value={selectedStatus} onValueChange={(value: any) => {
+                      console.log('🔄 Filtering locally to:', value, '(NO server request)');
+                      setSelectedStatus(value);
+                      setCurrentPage(1);
+                      // El filtrado se hace automáticamente por el useEffect que escucha selectedStatus
+                      // ESTO NO HACE LLAMADAS AL SERVIDOR - solo filtra allSpaces localmente
+                    }} className="w-full md:w-auto">
+                      <TabsList className="grid w-full md:w-auto grid-cols-4">
+                        <TabsTrigger value="all">Todos</TabsTrigger>
+                        <TabsTrigger value="approved">Aprobados</TabsTrigger>
+                        <TabsTrigger value="pending">Pendientes</TabsTrigger>
+                        <TabsTrigger value="rejected">Rechazados</TabsTrigger>
+                      </TabsList>
+                    </Tabs>
+                  </div>
+                </div>
+              </CardHeader>
           <CardContent>
             {spaces.length === 0 ? (
               <div className="text-center py-12">
@@ -639,6 +656,13 @@ const OwnerDashboard = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+
+          {/* Tab Content: Reservations Management */}
+          <TabsContent value="reservations">
+            <OwnerReservationManager />
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Modal de detalles del espacio */}
