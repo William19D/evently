@@ -343,31 +343,31 @@ export function MonthlyTimeBlockSelector({
     const isPast = isBefore(dayDate, startOfDay(new Date()));
     const isSelected = selectedDate && isSameDay(dayDate, selectedDate);
     
-    // 🔧 DEBUGGING: Log para entender el cálculo de disponibilidad limitada
-    const limitedThreshold = day.slots.length / 3;
-    const isLimited = day.availableCount < limitedThreshold;
-    
+    // Deterministic rule: a day is 'limited' when it has both occupied and available slots
+    // This aligns with the edge function which returns `occupiedDays` (days that have some occupied slots).
+    const hasOccupied = typeof day.occupiedCount === 'number' ? day.occupiedCount > 0 : day.slots.filter(s => !s.available).length > 0;
+    const hasAvailable = typeof day.availableCount === 'number' ? day.availableCount > 0 : day.slots.filter(s => s.available).length > 0;
+
+    const isLimited = hasOccupied && hasAvailable;
+
     console.log('🔧 getDayState DEBUG:', {
       dayDate: day.date,
       dayNumber: day.day,
       availableCount: day.availableCount,
+      occupiedCount: day.occupiedCount,
       totalSlots: day.slots.length,
-      limitedThreshold: Math.round(limitedThreshold * 100) / 100,
+      hasOccupied,
+      hasAvailable,
       isLimited,
       isPast,
       isSelected,
-      calculatedState: isPast ? 'past' 
-        : isSelected ? 'selected' 
-        : day.availableCount === 0 ? 'unavailable' 
-        : isLimited ? 'limited' 
-        : 'available',
-      note: 'Verificando cálculo de color amarillo (limited)'
+      calculatedState: isPast ? 'past' : isSelected ? 'selected' : day.availableCount === 0 ? 'unavailable' : isLimited ? 'limited' : 'available'
     });
-    
+
     if (isPast) return 'past';
     if (isSelected) return 'selected';
     if (day.availableCount === 0) return 'unavailable';
-    if (day.availableCount < day.slots.length / 3) return 'limited';
+    if (isLimited) return 'limited';
     return 'available';
   };
 

@@ -305,7 +305,7 @@ export class SpaceAvailabilityClient {
   }
 
   /**
-   * Genera un día con disponibilidad (puede ser completa o limitada)
+   * Genera un día con disponibilidad completa (sin reservas)
    */
   private static createFullyAvailableDay(
     date: Date, 
@@ -313,46 +313,30 @@ export class SpaceAvailabilityClient {
   ): DayAvailability {
     const slots: TimeSlot[] = [];
     
-    // 🔧 SIMULACIÓN: Algunos días pueden tener disponibilidad limitada
-    // En una implementación real, esto vendría de la edge function
+    // 🔧 FIX: Días que no están en occupiedDays deben ser completamente disponibles
+    // Solo la edge function tiene la autoridad para marcar slots como ocupados
     const dayOfMonth = date.getDate();
-    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-    
-    // Simulación de restricciones para demostrar disponibilidad limitada
-    const hasLimitedAvailability = 
-      dayOfMonth % 7 === 0 || // Cada 7 días
-      (isWeekend && dayOfMonth % 3 === 0); // Algunos fines de semana
     
     // Generar slots de 6:00 AM a 11:00 PM (18 slots por día)
+    // TODOS los slots deben estar disponibles ya que este día no tiene reservas
     for (let hour = 6; hour <= 23; hour++) {
-      let isAvailable = true;
-      
-      // Aplicar restricciones si hay disponibilidad limitada
-      if (hasLimitedAvailability) {
-        // Ejemplo: hacer que algunos horarios no estén disponibles
-        if (hour >= 12 && hour <= 17) { // 12 PM - 5 PM ocupado
-          isAvailable = false;
-        }
-      }
-      
       const slot = this.createAvailableSlot(date, hour, duration);
-      slot.available = isAvailable;
+      slot.available = true; // Siempre disponible para días sin reservas
       slots.push(slot);
     }
 
-    const availableCount = slots.filter(s => s.available).length;
-    const occupiedCount = slots.filter(s => !s.available).length;
+    const availableCount = slots.filter(s => s.available).length; // Debe ser 18
+    const occupiedCount = slots.filter(s => !s.available).length; // Debe ser 0
 
     console.log('🔧 createFullyAvailableDay - Día generado:', {
       date: date.toISOString().split('T')[0],
       dayOfMonth,
-      isWeekend,
-      hasLimitedAvailability,
+      isWeekend: date.getDay() === 0 || date.getDay() === 6,
       availableCount,
       occupiedCount,
       totalSlots: slots.length,
       ratio: availableCount / slots.length,
-      note: hasLimitedAvailability ? 'Día con disponibilidad limitada simulada' : 'Día completamente disponible'
+      note: 'Día completamente disponible (sin reservas en backend)'
     });
 
     return {
