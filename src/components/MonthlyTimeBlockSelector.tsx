@@ -95,7 +95,25 @@ export function MonthlyTimeBlockSelector({
   useEffect(() => {
     if (monthlyData && selectedDate) {
       const day = selectedDate.getDate();
-      const dayData = monthlyData.availability.days.find(d => d.day === day);
+      const selectedDateString = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      // 🔧 DEBUGGING: Buscar por número de día Y por fecha string
+      const dayDataByNumber = monthlyData.availability.days.find(d => d.day === day);
+      const dayDataByDate = monthlyData.availability.days.find(d => d.date === selectedDateString);
+      
+      console.log('🔧 DEBUGGING - Selección de día:', {
+        selectedDateFull: selectedDate.toString(),
+        selectedDateISO: selectedDate.toISOString(),
+        selectedDateString,
+        selectedDayNumber: day,
+        availableDays: monthlyData.availability.days.map(d => ({ day: d.day, date: d.date })),
+        foundByNumber: dayDataByNumber ? `Día ${dayDataByNumber.day} (${dayDataByNumber.date})` : 'No encontrado',
+        foundByDate: dayDataByDate ? `Día ${dayDataByDate.day} (${dayDataByDate.date})` : 'No encontrado',
+        note: 'Verificando si el problema está en el matching de fechas'
+      });
+      
+      // Usar búsqueda por fecha string como prioritaria
+      const dayData = dayDataByDate || dayDataByNumber;
       setSelectedDayData(dayData || null);
     }
   }, [monthlyData, selectedDate]);
@@ -126,6 +144,15 @@ export function MonthlyTimeBlockSelector({
   const handleDayClick = (day: DayAvailability) => {
     const dayDate = new Date(day.date);
     
+    console.log('🔧 DEBUGGING - Día clickeado:', {
+      clickedDay: day,
+      dayDateString: day.date,
+      parsedDayDate: dayDate.toString(),
+      parsedDayDateISO: dayDate.toISOString(),
+      dayNumber: dayDate.getDate(),
+      note: 'Verificando si el click genera la fecha correcta'
+    });
+    
     // No permitir fechas pasadas
     if (isBefore(dayDate, startOfDay(new Date()))) {
       return;
@@ -140,7 +167,23 @@ export function MonthlyTimeBlockSelector({
   const handleTimeBlockClick = (slot: TimeSlot) => {
     if (!selectedDate || !slot.available) return;
 
-    const selectedTime = new Date(slot.startDateTime);
+    // 🔧 SOLUCIÓN: Crear fecha local manteniendo la hora exacta del slot
+    // En lugar de parsear slot.startDateTime que puede causar conversiones
+    // Crear la fecha basada en el día seleccionado y la hora del slot
+    const selectedTime = new Date(selectedDate);
+    selectedTime.setHours(slot.hour, 0, 0, 0);
+    
+    console.log('🔧 Time block clicked - DEBUGGING TIMEZONE ISSUE:', {
+      slotHour: slot.hour,
+      slotStartDateTime: slot.startDateTime,
+      selectedDate: selectedDate.toISOString(),
+      parsedDateTime: selectedTime.toISOString(),
+      parsedLocalTime: selectedTime.toLocaleString('es-CO'),
+      parsedGetHours: selectedTime.getHours(),
+      parsedGetUTCHours: selectedTime.getUTCHours(),
+      timezoneDifference: selectedTime.getHours() - selectedTime.getUTCHours(),
+      note: 'VERIFICANDO: Conversión de hora local a UTC puede estar causando 3pm -> 3am'
+    });
     
     if (selectingStart) {
       onTimeChange(selectedTime, null);

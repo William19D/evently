@@ -170,20 +170,44 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
     setValidationErrors([]);
 
     try {
+      // 🔧 SOLUCIÓN: Crear fechas ISO manteniendo la hora local (sin conversión UTC)
+      const formatLocalTimeAsISO = (date: Date): string => {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+      };
+
       // Preparar datos para envío
       const reservationData: CreateReservationRequest = {
         spaceId: space.id,
-        startDate: startTime.toISOString(),
-        endDate: endTime.toISOString(),
+        startDate: formatLocalTimeAsISO(startTime),
+        endDate: formatLocalTimeAsISO(endTime),
         estimatedCapacity
       };
 
-      console.log('📝 Submitting reservation data:', {
-        ...reservationData,
+      console.log('📝 FIXED RESERVATION TIMES - Manteniendo hora local:', {
+        originalStartTime: startTime.toString(),
+        originalEndTime: endTime.toString(),
+        startTimeLocal: startTime.toLocaleString('es-CO'),
+        endTimeLocal: endTime.toLocaleString('es-CO'),
+        OLD_startTimeISO: startTime.toISOString(),
+        OLD_endTimeISO: endTime.toISOString(),
+        NEW_startTimeLocal: reservationData.startDate,
+        NEW_endTimeLocal: reservationData.endDate,
+        startHours: startTime.getHours(),
+        startUTCHours: startTime.getUTCHours(),
+        timezoneDiff: startTime.getHours() - startTime.getUTCHours(),
+        reservationData,
         eventType,
         eventDescription,
         specialRequests,
-        duration: duration + ' hours'
+        duration: duration + ' hours',
+        note: 'CORREGIDO: Enviando hora local exacta sin conversión UTC'
       });
 
       const result = await reservationClient.createReservation(reservationData);

@@ -55,6 +55,43 @@ export interface MonthlyAvailability {
 }
 
 // Nueva estructura optimizada de la edge function
+// 🔧 Interfaz para los datos RAW que vienen de la edge function
+export interface RawTimeSlot {
+  time: string;
+  hour: number;
+  available: boolean;
+  start_datetime_original: string;
+  end_datetime_original: string;
+  duration: number;
+  conflictWith?: {
+    id: number;
+    start_date_original: string;
+    end_date_original: string;
+    end_with_cleanup_string: string;
+    status: string;
+    conflictReason: string;
+  };
+}
+
+export interface RawDayAvailability {
+  date: string;
+  day: number;
+  dayOfWeek: number;
+  dayName: string;
+  isWeekend: boolean;
+  slots: RawTimeSlot[];
+  availableCount: number;
+  occupiedCount: number;
+  reservations: Array<{
+    id: number;
+    start_date_original: string;
+    end_date_original: string;
+    end_with_cleanup_string: string;
+    status: string;
+    capacity: number;
+  }>;
+}
+
 export interface OptimizedAvailabilityResponse {
   space: {
     id: number;
@@ -68,6 +105,7 @@ export interface OptimizedAvailabilityResponse {
     month: number;
     duration: number;
     cleanupTimeHours: number;
+    note: string;
   };
   monthInfo: {
     year: number;
@@ -86,11 +124,11 @@ export interface OptimizedAvailabilityResponse {
     availabilityRate: number;
     interpretation: string;
   };
-  occupiedDays: DayAvailability[]; // Solo días con reservas
+  occupiedDays: RawDayAvailability[]; // 🔧 Días con formato RAW de la edge function
   confirmedReservations: Array<{
     id: number;
-    startDate: string;
-    endDate: string;
+    start_date_original: string;
+    end_date_original: string;
     status: string;
     capacity: number;
   }>;
@@ -172,6 +210,64 @@ const AVAILABILITY_API_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions
 
 export class SpaceAvailabilityClient {
   /**
+   * 🔧 Mantiene las fechas exactamente como vienen del backend
+   */
+  private static normalizeDateTime(dateTimeString: string): string {
+    // ✅ MOSTRAR TAL COMO VIENE - No hacer ninguna transformación
+    console.log('🔧 Keeping original date from backend:', {
+      original: dateTimeString,
+      note: 'Sin modificaciones - tal como viene del backend'
+    });
+    
+    return dateTimeString;
+  }
+
+  /**
+   * 🔧 Convierte un slot RAW de la edge function al formato del cliente
+   */
+  private static convertRawSlotToTimeSlot(rawSlot: RawTimeSlot): TimeSlot {
+    return {
+      time: rawSlot.time,
+      hour: rawSlot.hour,
+      available: rawSlot.available,
+      startDateTime: this.normalizeDateTime(rawSlot.start_datetime_original),
+      endDateTime: this.normalizeDateTime(rawSlot.end_datetime_original),
+      duration: rawSlot.duration,
+      conflictWith: rawSlot.conflictWith ? {
+        id: rawSlot.conflictWith.id,
+        start: rawSlot.conflictWith.start_date_original,
+        end: rawSlot.conflictWith.end_date_original,
+        status: rawSlot.conflictWith.status
+      } : undefined
+    };
+  }
+
+  /**
+   * 🔧 Convierte un día RAW de la edge function al formato del cliente
+   */
+  private static convertRawDayToDay(rawDay: RawDayAvailability): DayAvailability {
+    // ✅ USAR DATOS TAL COMO VIENEN DEL BACKEND - Sin modificaciones
+    return {
+      day: rawDay.day,
+      date: rawDay.date,
+      dayOfWeek: rawDay.dayOfWeek,
+      dayName: rawDay.dayName,
+      isWeekend: rawDay.isWeekend,
+      slots: rawDay.slots.map(slot => this.convertRawSlotToTimeSlot(slot)),
+      availableCount: rawDay.availableCount,
+      occupiedCount: rawDay.occupiedCount,
+      reservations: rawDay.reservations.map(reservation => ({
+        id: reservation.id,
+        start: this.normalizeDateTime(reservation.start_date_original),
+        end: this.normalizeDateTime(reservation.end_date_original),
+        endWithCleanup: this.normalizeDateTime(reservation.end_with_cleanup_string),
+        status: reservation.status,
+        capacity: reservation.capacity
+      }))
+    };
+  }
+
+  /**
    * Crea un slot de tiempo completamente disponible para un día sin reservas
    */
   private static createAvailableSlot(date: Date, hour: number, duration: number): TimeSlot {
@@ -227,10 +323,11 @@ export class SpaceAvailabilityClient {
     const { monthInfo, occupiedDays, searchParams } = optimizedData;
     const allDays: DayAvailability[] = [];
 
-    // Crear un mapa de días ocupados para búsqueda rápida
+    // Crear un mapa de días ocupados para búsqueda rápida (convertir RAW a formato cliente)
     const occupiedDaysMap = new Map<number, DayAvailability>();
-    occupiedDays.forEach(day => {
-      occupiedDaysMap.set(day.day, day);
+    occupiedDays.forEach(rawDay => {
+      const convertedDay = this.convertRawDayToDay(rawDay);
+      occupiedDaysMap.set(convertedDay.day, convertedDay);
     });
 
     // Generar todos los días del mes
@@ -238,7 +335,7 @@ export class SpaceAvailabilityClient {
       const dayDate = new Date(monthInfo.year, monthInfo.month - 1, day);
       
       if (occupiedDaysMap.has(day)) {
-        // Día con reservas - usar datos de la respuesta optimizada
+        // Día con reservas - usar datos convertidos de la respuesta optimizada
         allDays.push(occupiedDaysMap.get(day)!);
       } else {
         // Día sin reservas - generar como completamente disponible
@@ -274,7 +371,13 @@ export class SpaceAvailabilityClient {
         duration: searchParams.duration
       },
       availability,
-      reservations: optimizedData.confirmedReservations
+      reservations: optimizedData.confirmedReservations.map(reservation => ({
+        id: reservation.id,
+        startDate: this.normalizeDateTime(reservation.start_date_original),
+        endDate: this.normalizeDateTime(reservation.end_date_original),
+        status: reservation.status,
+        capacity: reservation.capacity
+      }))
     };
   }
 
