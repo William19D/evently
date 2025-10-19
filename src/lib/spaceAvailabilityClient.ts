@@ -247,15 +247,32 @@ export class SpaceAvailabilityClient {
    */
   private static convertRawDayToDay(rawDay: RawDayAvailability): DayAvailability {
     // ✅ USAR DATOS TAL COMO VIENEN DEL BACKEND - Sin modificaciones
+    const convertedSlots = rawDay.slots.map(slot => this.convertRawSlotToTimeSlot(slot));
+    
+    // 🔧 RECALCULAR availableCount y occupiedCount basándose en slots reales
+    const actualAvailableCount = convertedSlots.filter(slot => slot.available).length;
+    const actualOccupiedCount = convertedSlots.filter(slot => !slot.available).length;
+    
+    console.log('🔧 convertRawDayToDay - Recalculando contadores:', {
+      dayDate: rawDay.date,
+      rawAvailableCount: rawDay.availableCount,
+      rawOccupiedCount: rawDay.occupiedCount,
+      actualAvailableCount,
+      actualOccupiedCount,
+      totalSlots: convertedSlots.length,
+      slotsDetails: convertedSlots.map(s => ({ hour: s.hour, available: s.available })),
+      note: 'Corrigiendo contadores basándose en slots reales'
+    });
+    
     return {
       day: rawDay.day,
       date: rawDay.date,
       dayOfWeek: rawDay.dayOfWeek,
       dayName: rawDay.dayName,
       isWeekend: rawDay.isWeekend,
-      slots: rawDay.slots.map(slot => this.convertRawSlotToTimeSlot(slot)),
-      availableCount: rawDay.availableCount,
-      occupiedCount: rawDay.occupiedCount,
+      slots: convertedSlots,
+      availableCount: actualAvailableCount,
+      occupiedCount: actualOccupiedCount,
       reservations: rawDay.reservations.map(reservation => ({
         id: reservation.id,
         start: this.normalizeDateTime(reservation.start_date_original),
@@ -288,7 +305,7 @@ export class SpaceAvailabilityClient {
   }
 
   /**
-   * Genera un día completamente disponible (sin reservas)
+   * Genera un día con disponibilidad (puede ser completa o limitada)
    */
   private static createFullyAvailableDay(
     date: Date, 
@@ -296,10 +313,47 @@ export class SpaceAvailabilityClient {
   ): DayAvailability {
     const slots: TimeSlot[] = [];
     
+    // 🔧 SIMULACIÓN: Algunos días pueden tener disponibilidad limitada
+    // En una implementación real, esto vendría de la edge function
+    const dayOfMonth = date.getDate();
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    
+    // Simulación de restricciones para demostrar disponibilidad limitada
+    const hasLimitedAvailability = 
+      dayOfMonth % 7 === 0 || // Cada 7 días
+      (isWeekend && dayOfMonth % 3 === 0); // Algunos fines de semana
+    
     // Generar slots de 6:00 AM a 11:00 PM (18 slots por día)
     for (let hour = 6; hour <= 23; hour++) {
-      slots.push(this.createAvailableSlot(date, hour, duration));
+      let isAvailable = true;
+      
+      // Aplicar restricciones si hay disponibilidad limitada
+      if (hasLimitedAvailability) {
+        // Ejemplo: hacer que algunos horarios no estén disponibles
+        if (hour >= 12 && hour <= 17) { // 12 PM - 5 PM ocupado
+          isAvailable = false;
+        }
+      }
+      
+      const slot = this.createAvailableSlot(date, hour, duration);
+      slot.available = isAvailable;
+      slots.push(slot);
     }
+
+    const availableCount = slots.filter(s => s.available).length;
+    const occupiedCount = slots.filter(s => !s.available).length;
+
+    console.log('🔧 createFullyAvailableDay - Día generado:', {
+      date: date.toISOString().split('T')[0],
+      dayOfMonth,
+      isWeekend,
+      hasLimitedAvailability,
+      availableCount,
+      occupiedCount,
+      totalSlots: slots.length,
+      ratio: availableCount / slots.length,
+      note: hasLimitedAvailability ? 'Día con disponibilidad limitada simulada' : 'Día completamente disponible'
+    });
 
     return {
       day: date.getDate(),
@@ -308,8 +362,8 @@ export class SpaceAvailabilityClient {
       dayName: date.toLocaleDateString('es-CO', { weekday: 'long' }),
       isWeekend: date.getDay() === 0 || date.getDay() === 6,
       slots,
-      availableCount: slots.length,
-      occupiedCount: 0,
+      availableCount,
+      occupiedCount,
       reservations: []
     };
   }
@@ -322,6 +376,20 @@ export class SpaceAvailabilityClient {
   ): MonthlyAvailabilityResponse {
     const { monthInfo, occupiedDays, searchParams } = optimizedData;
     const allDays: DayAvailability[] = [];
+
+    console.log('🔧 convertOptimizedToComplete - Datos recibidos:', {
+      monthInfo,
+      occupiedDaysCount: occupiedDays.length,
+      occupiedDaysDetails: occupiedDays.map(d => ({
+        day: d.day,
+        date: d.date,
+        availableCount: d.availableCount,
+        occupiedCount: d.occupiedCount,
+        totalSlots: d.slots.length
+      })),
+      searchParams,
+      note: 'Solo se reciben días con reservas confirmadas del backend'
+    });
 
     // Crear un mapa de días ocupados para búsqueda rápida (convertir RAW a formato cliente)
     const occupiedDaysMap = new Map<number, DayAvailability>();
@@ -336,10 +404,23 @@ export class SpaceAvailabilityClient {
       
       if (occupiedDaysMap.has(day)) {
         // Día con reservas - usar datos convertidos de la respuesta optimizada
-        allDays.push(occupiedDaysMap.get(day)!);
+        const dayData = occupiedDaysMap.get(day)!;
+        console.log(`🔧 Día ${day} - CON RESERVAS:`, {
+          availableCount: dayData.availableCount,
+          totalSlots: dayData.slots.length,
+          ratio: dayData.availableCount / dayData.slots.length
+        });
+        allDays.push(dayData);
       } else {
         // Día sin reservas - generar como completamente disponible
-        allDays.push(this.createFullyAvailableDay(dayDate, searchParams.duration));
+        const fullDay = this.createFullyAvailableDay(dayDate, searchParams.duration);
+        console.log(`🔧 Día ${day} - SIN RESERVAS (generado):`, {
+          availableCount: fullDay.availableCount,
+          totalSlots: fullDay.slots.length,
+          ratio: fullDay.availableCount / fullDay.slots.length,
+          note: 'Este día podría necesitar consulta real de disponibilidad'
+        });
+        allDays.push(fullDay);
       }
     }
 

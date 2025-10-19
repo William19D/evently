@@ -118,16 +118,32 @@ export function MonthlyTimeBlockSelector({
     }
   }, [monthlyData, selectedDate]);
 
-  // Recargar con nueva duración cuando cambie la selección
+  // Recargar con nueva duración cuando cambie la selección COMPLETA
   useEffect(() => {
+    // 🔧 SOLO recargar cuando AMBAS horas estén seleccionadas
+    // No recargar en medio del proceso de selección
     if (spaceId && startTime && endTime) {
       const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
       if (duration > 0) {
+        console.log('🔧 Recargando datos con nueva duración:', {
+          startTime: startTime.toISOString(),
+          endTime: endTime.toISOString(),
+          duration: Math.round(duration),
+          note: 'Solo se recarga cuando ambas horas están seleccionadas'
+        });
+        
         const timeoutId = setTimeout(() => {
           loadMonthlyData(currentMonth, Math.round(duration));
         }, 500);
         return () => clearTimeout(timeoutId);
       }
+    } else {
+      console.log('🔧 No recargando datos - selección incompleta:', {
+        hasSpaceId: !!spaceId,
+        hasStartTime: !!startTime,
+        hasEndTime: !!endTime,
+        note: 'Esperando selección completa antes de recargar'
+      });
     }
   }, [startTime, endTime]);
 
@@ -165,7 +181,15 @@ export function MonthlyTimeBlockSelector({
 
   // Manejar selección de bloque de tiempo
   const handleTimeBlockClick = (slot: TimeSlot) => {
-    if (!selectedDate || !slot.available) return;
+    if (!selectedDate || !slot.available) {
+      console.log('🔧 Click bloqueado:', {
+        hasSelectedDate: !!selectedDate,
+        slotAvailable: slot.available,
+        slotHour: slot.hour,
+        note: 'Click no procesado por condiciones previas'
+      });
+      return;
+    }
 
     // 🔧 SOLUCIÓN: Crear fecha local manteniendo la hora exacta del slot
     // En lugar de parsear slot.startDateTime que puede causar conversiones
@@ -173,23 +197,31 @@ export function MonthlyTimeBlockSelector({
     const selectedTime = new Date(selectedDate);
     selectedTime.setHours(slot.hour, 0, 0, 0);
     
-    console.log('🔧 Time block clicked - DEBUGGING TIMEZONE ISSUE:', {
+    console.log('🔧 Time block clicked - Estado actual:', {
+      selectingStart,
+      hasStartTime: !!startTime,
+      hasEndTime: !!endTime,
       slotHour: slot.hour,
-      slotStartDateTime: slot.startDateTime,
-      selectedDate: selectedDate.toISOString(),
-      parsedDateTime: selectedTime.toISOString(),
-      parsedLocalTime: selectedTime.toLocaleString('es-CO'),
-      parsedGetHours: selectedTime.getHours(),
-      parsedGetUTCHours: selectedTime.getUTCHours(),
-      timezoneDifference: selectedTime.getHours() - selectedTime.getUTCHours(),
-      note: 'VERIFICANDO: Conversión de hora local a UTC puede estar causando 3pm -> 3am'
+      slotAvailable: slot.available,
+      selectedTime: selectedTime.toISOString(),
+      note: selectingStart ? 'Seleccionando HORA INICIAL' : 'Seleccionando HORA FINAL'
     });
     
     if (selectingStart) {
+      console.log('🔧 Estableciendo hora inicial:', selectedTime.toISOString());
       onTimeChange(selectedTime, null);
       setSelectingStart(false);
+      console.log('🔧 Estado después de hora inicial - selectingStart ahora es false');
     } else {
-      if (!startTime) return;
+      if (!startTime) {
+        console.log('🔧 ERROR: No hay startTime para seleccionar hora final');
+        return;
+      }
+
+      console.log('🔧 Intentando establecer hora final:', {
+        startTime: startTime.toISOString(),
+        endTime: selectedTime.toISOString()
+      });
 
       // Manejar horarios que cruzan medianoche (eventos nocturnos)
       let duration: number;
@@ -311,6 +343,27 @@ export function MonthlyTimeBlockSelector({
     const isPast = isBefore(dayDate, startOfDay(new Date()));
     const isSelected = selectedDate && isSameDay(dayDate, selectedDate);
     
+    // 🔧 DEBUGGING: Log para entender el cálculo de disponibilidad limitada
+    const limitedThreshold = day.slots.length / 3;
+    const isLimited = day.availableCount < limitedThreshold;
+    
+    console.log('🔧 getDayState DEBUG:', {
+      dayDate: day.date,
+      dayNumber: day.day,
+      availableCount: day.availableCount,
+      totalSlots: day.slots.length,
+      limitedThreshold: Math.round(limitedThreshold * 100) / 100,
+      isLimited,
+      isPast,
+      isSelected,
+      calculatedState: isPast ? 'past' 
+        : isSelected ? 'selected' 
+        : day.availableCount === 0 ? 'unavailable' 
+        : isLimited ? 'limited' 
+        : 'available',
+      note: 'Verificando cálculo de color amarillo (limited)'
+    });
+    
     if (isPast) return 'past';
     if (isSelected) return 'selected';
     if (day.availableCount === 0) return 'unavailable';
@@ -344,7 +397,24 @@ export function MonthlyTimeBlockSelector({
     
     if (!startTime) return 'available';
     
-    const slotTime = new Date(slot.startDateTime);
+    // 🔧 CORRECCIÓN: Usar la misma lógica que handleTimeBlockClick
+    // Crear la fecha del slot basada en selectedDate y la hora del slot
+    if (!selectedDate) return 'available';
+    
+    const slotTime = new Date(selectedDate);
+    slotTime.setHours(slot.hour, 0, 0, 0);
+    
+    console.log('🔧 getTimeBlockState DEBUG:', {
+      slotHour: slot.hour,
+      slotAvailable: slot.available,
+      hasStartTime: !!startTime,
+      hasEndTime: !!endTime,
+      startTimeISO: startTime?.toISOString(),
+      endTimeISO: endTime?.toISOString(),
+      slotTimeISO: slotTime.toISOString(),
+      startTimeEquals: startTime ? startTime.getTime() === slotTime.getTime() : false,
+      endTimeEquals: endTime ? endTime.getTime() === slotTime.getTime() : false,
+    });
     
     if (startTime.getTime() === slotTime.getTime()) return 'start';
     if (endTime && endTime.getTime() === slotTime.getTime()) return 'end';
@@ -509,23 +579,13 @@ export function MonthlyTimeBlockSelector({
           {/* Resumen del mes */}
           {monthlyData && (
             <div className="mb-4 p-3 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                <div>
-                  <span className="font-medium text-gray-700">Mes:</span>
-                  <p className="text-gray-600">{monthlyData.availability.monthName}</p>
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-1 gap-4 text-sm">
+
                 <div>
                   <span className="font-medium text-gray-700">Disponibilidad:</span>
                   <p className="text-gray-600">{monthlyData.availability.summary.availabilityRate}%</p>
                 </div>
-                <div>
-                  <span className="font-medium text-gray-700">Slots libres:</span>
-                  <p className="text-gray-600">{monthlyData.availability.summary.availableSlots}</p>
-                </div>
-                <div>
-                  <span className="font-medium text-gray-700">Total slots:</span>
-                  <p className="text-gray-600">{monthlyData.availability.summary.totalSlots}</p>
-                </div>
+
               </div>
             </div>
           )}
