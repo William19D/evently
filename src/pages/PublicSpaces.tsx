@@ -5,9 +5,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Navigation from "@/components/Navigation";
 import Breadcrumb from "@/components/Breadcrumb";
+import VenueCard from "@/components/VenueCard";
 import { useAuth } from "@/contexts/AuthContext";
 import { 
   MapPin, 
@@ -21,7 +23,8 @@ import {
   Calendar,
   DollarSign,
   AlertCircle,
-  Loader2
+  Loader2,
+  X
 } from "lucide-react";
 import { publicSpacesClient, type PublicSpace, type PublicSpacesFilters } from "@/lib/publicSpacesClient";
 import { useToast } from "@/hooks/use-toast";
@@ -49,6 +52,37 @@ const PublicSpaces = () => {
     has_prev: false
   });
   const [showFilters, setShowFilters] = useState(false);
+  
+  // Estados para filtros adicionales
+  const [priceRange, setPriceRange] = useState([0, 1000000]);
+  const [selectedType, setSelectedType] = useState<string>("all");
+  const [selectedLocation, setSelectedLocation] = useState<string>("all");
+  const [capacityRange, setCapacityRange] = useState([0, 500]);
+
+  // Opciones para filtros
+  const spaceTypes = [
+    "Salón de eventos",
+    "Auditorio", 
+    "Sala de conferencias",
+    "Terraza",
+    "Jardín",
+    "Galería",
+    "Estudio",
+    "Rooftop",
+    "Salón social",
+    "Otro"
+  ];
+
+  const locations = [
+    "Bogotá",
+    "Medellín", 
+    "Cali",
+    "Barranquilla",
+    "Cartagena",
+    "Bucaramanga",
+    "Pereira",
+    "Manizales"
+  ];
 
   // Cargar espacios
   const loadSpaces = async () => {
@@ -57,7 +91,17 @@ const PublicSpaces = () => {
       
       const searchFilters = {
         ...filters,
-        ...(searchTerm && { search: searchTerm })
+        ...(searchTerm && { search: searchTerm }),
+        ...(selectedType && selectedType !== "all" && { type: selectedType }),
+        ...(selectedLocation && selectedLocation !== "all" && { location: selectedLocation }),
+        ...(priceRange[0] > 0 || priceRange[1] < 1000000) && {
+          min_price: priceRange[0],
+          max_price: priceRange[1]
+        },
+        ...(capacityRange[0] > 0 || capacityRange[1] < 500) && {
+          min_capacity: capacityRange[0],
+          max_capacity: capacityRange[1]
+        }
       };
 
       const response = await publicSpacesClient.getPublicSpaces(searchFilters);
@@ -82,8 +126,12 @@ const PublicSpaces = () => {
 
   // Efecto para cargar espacios cuando cambien los filtros
   useEffect(() => {
-    loadSpaces();
-  }, [filters]);
+    const debounceTimer = setTimeout(() => {
+      loadSpaces();
+    }, 300); // Debounce para evitar muchas llamadas
+    
+    return () => clearTimeout(debounceTimer);
+  }, [filters, searchTerm, selectedType, selectedLocation, priceRange, capacityRange]);
 
   // Manejar búsqueda
   const handleSearch = (e: React.FormEvent) => {
@@ -110,6 +158,10 @@ const PublicSpaces = () => {
   // Limpiar filtros
   const clearFilters = () => {
     setSearchTerm("");
+    setSelectedType("all");
+    setSelectedLocation("all");
+    setPriceRange([0, 1000000]);
+    setCapacityRange([0, 500]);
     setFilters({
       page: 1,
       limit: 12,
@@ -134,6 +186,18 @@ const PublicSpaces = () => {
     return stars;
   };
 
+  // Convertir PublicSpace a formato VenueCard
+  const convertToVenueCard = (space: PublicSpace) => ({
+    id: space.id.toString(),
+    name: space.name,
+    location: space.location,
+    image: space.photos.find(p => p.is_primary)?.url || space.photos[0]?.url || "/placeholder.svg",
+    price: space.price_per_hour,
+    rating: space.rating.average,
+    capacity: `${space.capacity} personas`,
+    amenities: space.amenities?.map(a => a.display_name || a.name) || []
+  });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
       {/* Navbar */}
@@ -148,13 +212,85 @@ const PublicSpaces = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-6">
-        {/* Panel de filtros lateral simplificado */}
-        {showFilters && (
-          <aside className="w-64 bg-white shadow-md rounded-lg p-4">
-            <h2 className="text-lg font-semibold text-gray-800">Filtros</h2>
-            <p className="text-sm text-gray-600">Aquí puedes aplicar filtros.</p>
-          </aside>
-        )}
+        {/* Panel de filtros lateral */}
+        <aside className={`w-80 transition-all duration-300 ${showFilters ? 'block' : 'hidden lg:block'}`}>
+          <Card className="sticky top-8">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Filter className="w-4 h-4" />
+                  Filtros
+                </CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Limpiar
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Tipo de espacio */}
+              <div>
+                <h4 className="font-medium mb-3">Tipo de Espacio</h4>
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos los tipos</SelectItem>
+                    {spaceTypes.map((type) => (
+                      <SelectItem key={type} value={type}>
+                        {type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Ubicación */}
+              <div>
+                <h4 className="font-medium mb-3">Ciudad</h4>
+                <Select value={selectedLocation} onValueChange={setSelectedLocation}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleccionar ciudad" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas las ciudades</SelectItem>
+                    {locations.map((location) => (
+                      <SelectItem key={location} value={location}>
+                        {location}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              
+              {/* Ordenar por */}
+              <div>
+                <h4 className="font-medium mb-3">Ordenar por</h4>
+                <Select 
+                  value={filters.sort_by} 
+                  onValueChange={(value) => handleFilterChange('sort_by', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="created_at">Más recientes</SelectItem>
+                    <SelectItem value="price_per_hour">Precio</SelectItem>
+                    <SelectItem value="capacity">Capacidad</SelectItem>
+                    <SelectItem value="rating">Mejor valorados</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
 
         {/* Contenido principal */}
         <main className="flex-1">
@@ -183,6 +319,7 @@ const PublicSpaces = () => {
                       type="button" 
                       variant="outline"
                       onClick={() => setShowFilters(!showFilters)}
+                      className="lg:hidden"
                     >
                       <Filter className="w-4 h-4 mr-2" />
                       Filtros
@@ -195,7 +332,7 @@ const PublicSpaces = () => {
 
           {/* Resultados */}
           <div className="mb-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between mb-4">
               <p className="text-gray-600">
                 {isLoading ? (
                   "Buscando espacios..."
@@ -209,6 +346,66 @@ const PublicSpaces = () => {
                 </p>
               )}
             </div>
+
+            {/* Filtros activos */}
+            {(selectedType !== "all" || selectedLocation !== "all" || searchTerm || priceRange[0] > 0 || priceRange[1] < 1000000 || capacityRange[0] > 0 || capacityRange[1] < 500) && (
+              <div className="flex flex-wrap gap-2 mb-4">
+                <span className="text-sm text-gray-600">Filtros activos:</span>
+                {searchTerm && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    Búsqueda: "{searchTerm}"
+                    <X 
+                      className="w-3 h-3 cursor-pointer" 
+                      onClick={() => setSearchTerm("")}
+                    />
+                  </Badge>
+                )}
+                {selectedType !== "all" && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    Tipo: {selectedType}
+                    <X 
+                      className="w-3 h-3 cursor-pointer" 
+                      onClick={() => setSelectedType("all")}
+                    />
+                  </Badge>
+                )}
+                {selectedLocation !== "all" && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    Ciudad: {selectedLocation}
+                    <X 
+                      className="w-3 h-3 cursor-pointer" 
+                      onClick={() => setSelectedLocation("all")}
+                    />
+                  </Badge>
+                )}
+                {(priceRange[0] > 0 || priceRange[1] < 1000000) && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    Precio: ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
+                    <X 
+                      className="w-3 h-3 cursor-pointer" 
+                      onClick={() => setPriceRange([0, 1000000])}
+                    />
+                  </Badge>
+                )}
+                {(capacityRange[0] > 0 || capacityRange[1] < 500) && (
+                  <Badge variant="secondary" className="flex items-center gap-1">
+                    Capacidad: {capacityRange[0]} - {capacityRange[1]} personas
+                    <X 
+                      className="w-3 h-3 cursor-pointer" 
+                      onClick={() => setCapacityRange([0, 500])}
+                    />
+                  </Badge>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearFilters}
+                  className="text-xs h-6 px-2"
+                >
+                  Limpiar todos
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Loading */}
@@ -231,75 +428,9 @@ const PublicSpaces = () => {
 
           {/* Grid de espacios */}
           {!isLoading && spaces.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
               {spaces.map((space) => (
-                <Card key={space.id} className="group hover:shadow-lg transition-shadow duration-200">
-                  <div className="relative">
-                    {/* Imagen principal */}
-                    {space.photos.length > 0 ? (
-                      <img
-                        src={space.photos.find(p => p.is_primary)?.url || space.photos[0]?.url}
-                        alt={space.name}
-                        className="w-full h-48 object-cover rounded-t-lg"
-                      />
-                    ) : (
-                      <div className="w-full h-48 bg-gray-200 rounded-t-lg flex items-center justify-center">
-                        <Building2 className="w-12 h-12 text-gray-400" />
-                      </div>
-                    )}
-                    
-                    {/* Badge del tipo */}
-                    <Badge className="absolute top-2 left-2 bg-white/90 text-gray-800">
-                      {space.type}
-                    </Badge>
-                  </div>
-
-                  <CardContent className="p-4">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-lg line-clamp-1">{space.name}</h3>
-                      
-                      <p className="text-sm text-gray-600 line-clamp-2">{space.description}</p>
-                      
-                      {/* Rating */}
-                      {space.rating.count > 0 && (
-                        <div className="flex items-center gap-1">
-                          {renderStars(space.rating.stars)}
-                          <span className="text-sm text-gray-600 ml-1">
-                            {space.rating.average.toFixed(1)} ({space.rating.count})
-                          </span>
-                        </div>
-                      )}
-                      
-                      {/* Ubicación */}
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <MapPin className="w-4 h-4" />
-                        <span className="line-clamp-1">{space.location}</span>
-                      </div>
-                      
-                      {/* Capacidad */}
-                      <div className="flex items-center gap-1 text-sm text-gray-600">
-                        <Users className="w-4 h-4" />
-                        <span>Hasta {space.capacity} personas</span>
-                      </div>
-                      
-                      {/* Precio */}
-                      <div className="flex items-center gap-1 text-lg font-semibold text-[#f1893f]">
-                        <DollarSign className="w-5 h-5" />
-                        <span>{space.price_formatted}/hora</span>
-                      </div>
-                      
-                      {/* Botón de ver más */}
-                      <Link to={`/spaces/${space.id}`} className="block">
-                        <Button 
-                          className="w-full mt-3 bg-[#f1893f] hover:bg-[#e17a36] text-white border-0" 
-                          variant="default"
-                        >
-                          Ver Detalles
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
+                <VenueCard key={space.id} {...convertToVenueCard(space)} />
               ))}
             </div>
           )}
