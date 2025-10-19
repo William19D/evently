@@ -1,8 +1,23 @@
-// Client para manejar reservas de espacios
+// Client para manejar reservas de espacios - Mejorado para eventos
 import { authClient } from './authClient';
 
 // URL directa de la edge function desplegada
 const RESERVATIONS_ENDPOINT = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/reservation';
+
+// Configuraciones para validaciones de eventos
+export const EVENT_CONSTRAINTS = {
+  MIN_DURATION_HOURS: 1,
+  MAX_DURATION_HOURS: 12,
+  MIN_ADVANCE_BOOKING_HOURS: 2, // Mínimo 2 horas de anticipación
+  MAX_ADVANCE_BOOKING_DAYS: 90, // Máximo 90 días de anticipación
+  OPERATING_HOURS: {
+    START: 6, // 6:00 AM
+    END: 23,  // 11:00 PM
+    NIGHT_END: 4 // 4:00 AM (día siguiente para eventos nocturnos)
+  },
+  NIGHT_EVENT_MIN_START_HOUR: 18, // Los eventos nocturnos deben empezar después de las 6:00 PM
+  BLOCK_SIZE_MINUTES: 60 // Bloques de 1 hora
+} as const;
 
 export interface CreateReservationRequest {
   spaceId: number;
@@ -197,7 +212,7 @@ class ReservationClient {
   }
 
   /**
-   * Validar datos de reserva antes de enviar
+   * Validar datos de reserva antes de enviar - Mejorado para eventos
    */
   validateReservationData(data: CreateReservationRequest): { isValid: boolean; errors: string[] } {
     const errors: string[] = [];
@@ -209,11 +224,11 @@ class ReservationClient {
 
     // Validar fechas
     if (!data.startDate) {
-      errors.push('Fecha de inicio es requerida');
+      errors.push('Fecha y hora de inicio son requeridas');
     }
 
     if (!data.endDate) {
-      errors.push('Fecha de fin es requerida');
+      errors.push('Fecha y hora de fin son requeridas');
     }
 
     if (data.startDate && data.endDate) {
@@ -221,29 +236,98 @@ class ReservationClient {
       const end = new Date(data.endDate);
       const now = new Date();
 
-      if (start <= now) {
-        errors.push('La fecha de inicio debe ser futura');
+      // Validar que la fecha de inicio sea futura (con margen de anticipación)
+      const minimumStartTime = new Date(now.getTime() + (EVENT_CONSTRAINTS.MIN_ADVANCE_BOOKING_HOURS * 60 * 60 * 1000));
+      if (start <= minimumStartTime) {
+        errors.push(`La reserva debe hacerse con al menos ${EVENT_CONSTRAINTS.MIN_ADVANCE_BOOKING_HOURS} horas de anticipación`);
       }
 
-      if (end <= start) {
-        errors.push('La fecha de fin debe ser posterior a la fecha de inicio');
+      // Validar que no sea más allá del límite de anticipación
+      const maxAdvanceTime = new Date(now.getTime() + (EVENT_CONSTRAINTS.MAX_ADVANCE_BOOKING_DAYS * 24 * 60 * 60 * 1000));
+      if (start > maxAdvanceTime) {
+        errors.push(`No se pueden hacer reservas con más de ${EVENT_CONSTRAINTS.MAX_ADVANCE_BOOKING_DAYS} días de anticipación`);
       }
 
-      // Validar que no sea más de 1 año en el futuro
-      const oneYearFromNow = new Date();
-      oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-      if (start > oneYearFromNow) {
-        errors.push('No se pueden hacer reservas con más de un año de anticipación');
+      // Detectar si es un evento nocturno (cruza medianoche)
+      const isNightEvent = end < start || (end.getDate() !== start.getDate());
+      
+      let durationHours: number;
+      
+      if (isNightEvent) {
+        // Calcular duración para eventos nocturnos
+        const endOfStartDay = new Date(start);
+        endOfStartDay.setHours(24, 0, 0, 0);
+        const startOfEndDay = new Date(end);
+        startOfEndDay.setHours(0, 0, 0, 0);
+        
+        durationHours = (endOfStartDay.getTime() - start.getTime() + end.getTime() - startOfEndDay.getTime()) / (1000 * 60 * 60);
+        
+        // Validaciones específicas para eventos nocturnos
+        const startHour = start.getHours();
+        const endHour = end.getHours();
+        
+        if (startHour < EVENT_CONSTRAINTS.NIGHT_EVENT_MIN_START_HOUR) {
+          errors.push(`Los eventos nocturnos deben iniciar después de las ${EVENT_CONSTRAINTS.NIGHT_EVENT_MIN_START_HOUR}:00`);
+        }
+        
+        if (endHour > EVENT_CONSTRAINTS.OPERATING_HOURS.NIGHT_END) {
+          errors.push(`Los eventos nocturnos no pueden extenderse más allá de las ${EVENT_CONSTRAINTS.OPERATING_HOURS.NIGHT_END}:00 AM`);
+        }
+        
+        // Verificar que el evento termine el día siguiente
+        const nextDay = new Date(start);
+        nextDay.setDate(nextDay.getDate() + 1);
+        if (end.toDateString() !== nextDay.toDateString()) {
+          errors.push('Los eventos nocturnos solo pueden extenderse hasta el día siguiente');
+        }
+        
+      } else {
+        // Validación normal para eventos en el mismo día
+        if (end <= start) {
+          errors.push('La fecha de fin debe ser posterior a la fecha de inicio');
+        }
+        
+        durationHours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        
+        // Validar horarios de operación normales
+        const startHour = start.getHours();
+        const endHour = end.getHours();
+        
+        if (startHour < EVENT_CONSTRAINTS.OPERATING_HOURS.START) {
+          errors.push(`Los eventos regulares pueden iniciar a partir de las ${EVENT_CONSTRAINTS.OPERATING_HOURS.START}:00`);
+        }
+        
+        if (endHour > EVENT_CONSTRAINTS.OPERATING_HOURS.END) {
+          errors.push(`Los eventos regulares deben terminar antes de las ${EVENT_CONSTRAINTS.OPERATING_HOURS.END}:00 (usa evento nocturno para extender hasta 4:00 AM)`);
+        }
+      }
+      
+      // Validaciones comunes de duración
+      if (durationHours < EVENT_CONSTRAINTS.MIN_DURATION_HOURS) {
+        errors.push(`La duración mínima del evento es ${EVENT_CONSTRAINTS.MIN_DURATION_HOURS} hora(s)`);
+      }
+
+      if (durationHours > EVENT_CONSTRAINTS.MAX_DURATION_HOURS) {
+        errors.push(`La duración máxima del evento es ${EVENT_CONSTRAINTS.MAX_DURATION_HOURS} horas`);
+      }
+
+      // Validar que las horas sean en bloques exactos (cada hora en punto)
+      if (start.getMinutes() !== 0 || start.getSeconds() !== 0) {
+        errors.push('Las reservas deben comenzar en horas exactas (ej: 14:00, 15:00)');
+      }
+
+      if (end.getMinutes() !== 0 || end.getSeconds() !== 0) {
+        errors.push('Las reservas deben terminar en horas exactas (ej: 17:00, 18:00)');
       }
     }
 
     // Validar capacidad
     if (!data.estimatedCapacity || data.estimatedCapacity <= 0) {
-      errors.push('La capacidad estimada debe ser mayor a 0');
+      errors.push('El número de invitados debe ser mayor a 0');
     }
 
-    if (data.estimatedCapacity > 10000) {
-      errors.push('La capacidad estimada parece demasiado alta');
+    if (data.estimatedCapacity > 1000) {
+      errors.push('El número máximo de invitados es 1000');
     }
 
     return {
@@ -259,6 +343,63 @@ class ReservationClient {
     const start = new Date(startDate);
     const end = new Date(endDate);
     return (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+  }
+
+  /**
+   * Generar bloques de tiempo disponibles para un día específico
+   */
+  generateTimeBlocks(date: Date): Array<{ hour: number; timeSlot: string; isAvailable: boolean }> {
+    const blocks = [];
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const currentHour = now.getHours();
+
+    for (let hour = EVENT_CONSTRAINTS.OPERATING_HOURS.START; hour <= EVENT_CONSTRAINTS.OPERATING_HOURS.END; hour++) {
+      const isPast = isToday && hour <= currentHour;
+      
+      blocks.push({
+        hour,
+        timeSlot: `${hour.toString().padStart(2, '0')}:00`,
+        isAvailable: !isPast
+      });
+    }
+
+    return blocks;
+  }
+
+  /**
+   * Validar si un rango de tiempo está dentro de los horarios permitidos
+   */
+  isValidTimeRange(startDate: Date, endDate: Date): boolean {
+    const startHour = startDate.getHours();
+    const endHour = endDate.getHours();
+    
+    return (
+      startHour >= EVENT_CONSTRAINTS.OPERATING_HOURS.START &&
+      endHour <= EVENT_CONSTRAINTS.OPERATING_HOURS.END &&
+      startDate.getMinutes() === 0 &&
+      endDate.getMinutes() === 0
+    );
+  }
+
+  /**
+   * Obtener la duración máxima permitida para un tipo de evento
+   */
+  getMaxDurationForEventType(eventType: string): number {
+    const eventDurations = {
+      'conference': 8,
+      'wedding': 12,
+      'birthday': 8,
+      'corporate': 10,
+      'workshop': 6,
+      'presentation': 4,
+      'party': 10,
+      'graduation': 6,
+      'exhibition': 12,
+      'other': 12
+    };
+
+    return eventDurations[eventType as keyof typeof eventDurations] || EVENT_CONSTRAINTS.MAX_DURATION_HOURS;
   }
 
   /**

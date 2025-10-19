@@ -35,7 +35,6 @@ import SuperadminLogin from "./pages/SuperadminLogin";
 import SuperadminDashboard from "./pages/SuperadminDashboard";
 import PublicSpaces from "./pages/PublicSpaces";
 import PublicSpaceDetail from "./pages/PublicSpaceDetail";
-import PublicSpacesTest from "./components/PublicSpacesTest";
 import EmailVerificationHandler from "./components/EmailVerificationHandler";
 
 const queryClient = new QueryClient();
@@ -76,9 +75,6 @@ const App = () => (
               {/* Public spaces routes - no authentication required */}
               <Route path="/spaces" element={<PublicSpaces />} />
               <Route path="/spaces/:id" element={<PublicSpaceDetail />} />
-              
-              {/* Test route - temporary */}
-              <Route path="/test-spaces" element={<PublicSpacesTest />} />
               
               <Route path="/publish-space" element={
                 <ProtectedRoute>

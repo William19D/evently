@@ -4,10 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CalendarCheck, Users, Clock, DollarSign, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { CalendarCheck, Users, Clock, DollarSign, Loader2, AlertCircle, CheckCircle, Calendar, MapPin, Sparkles } from 'lucide-react';
 import { reservationClient, type CreateReservationRequest, type CreateReservationResponse } from '@/lib/reservationClient';
+import { MonthlyTimeBlockSelector } from './MonthlyTimeBlockSelector';
 import { toast } from 'sonner';
 import { type PublicSpace } from '@/lib/publicSpacesClient';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 interface ReservationModalProps {
   isOpen: boolean;
@@ -15,50 +20,68 @@ interface ReservationModalProps {
   space: PublicSpace;
 }
 
+// Tipos de eventos disponibles
+const EVENT_TYPES = [
+  { value: 'conference', label: '📊 Conferencia / Reunión', duration: [1, 8] },
+  { value: 'wedding', label: '💒 Boda', duration: [4, 12] },
+  { value: 'birthday', label: '🎂 Cumpleaños', duration: [2, 8] },
+  { value: 'corporate', label: '🏢 Evento Corporativo', duration: [2, 10] },
+  { value: 'workshop', label: '🎓 Taller / Workshop', duration: [2, 6] },
+  { value: 'presentation', label: '🎤 Presentación', duration: [1, 4] },
+  { value: 'party', label: '🎉 Fiesta / Celebración', duration: [3, 10] },
+  { value: 'graduation', label: '🎓 Graduación', duration: [2, 6] },
+  { value: 'exhibition', label: '🖼️ Exposición', duration: [4, 12] },
+  { value: 'other', label: '✨ Otro evento', duration: [1, 12] }
+];
+
 const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, space }) => {
-  const [formData, setFormData] = useState<CreateReservationRequest>({
-    spaceId: space.id,
-    startDate: '',
-    endDate: '',
-    estimatedCapacity: 1
-  });
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [estimatedCapacity, setEstimatedCapacity] = useState(1);
+  const [eventType, setEventType] = useState<string>('');
+  const [eventDescription, setEventDescription] = useState('');
+  const [specialRequests, setSpecialRequests] = useState('');
   
   const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [reservationResult, setReservationResult] = useState<CreateReservationResponse | null>(null);
+  
+  // Obtener el tipo de evento seleccionado
+  const selectedEventType = EVENT_TYPES.find(type => type.value === eventType);
+  const maxDuration = selectedEventType ? selectedEventType.duration[1] : 12;
 
   // Resetear formulario cuando se abre/cierra el modal
   React.useEffect(() => {
     if (isOpen) {
-      const currentDateTime = reservationClient.getCurrentDateTime();
-      setFormData({
-        spaceId: space.id,
-        startDate: currentDateTime,
-        endDate: '',
-        estimatedCapacity: 1
-      });
+      setSelectedDate(null);
+      setStartTime(null);
+      setEndTime(null);
+      setEstimatedCapacity(1);
+      setEventType('');
+      setEventDescription('');
+      setSpecialRequests('');
       setValidationErrors([]);
       setReservationResult(null);
     }
   }, [isOpen, space.id]);
 
-  const handleInputChange = (field: keyof CreateReservationRequest, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+  // Manejar cambios en el selector de tiempo
+  const handleTimeChange = (start: Date | null, end: Date | null) => {
+    setStartTime(start);
+    setEndTime(end);
     
-    // Limpiar errores cuando el usuario empiece a escribir
+    // Limpiar errores cuando el usuario haga cambios
     if (validationErrors.length > 0) {
       setValidationErrors([]);
     }
   };
 
   const calculateEstimatedCost = (): number | null => {
-    if (!formData.startDate || !formData.endDate) return null;
+    if (!startTime || !endTime) return null;
     
     try {
-      const duration = reservationClient.calculateDuration(formData.startDate, formData.endDate);
+      const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
       if (duration <= 0) return null;
       
       return Math.round(duration * space.price_per_hour);
@@ -67,24 +90,79 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
     }
   };
 
+  const calculateDuration = (): number => {
+    if (!startTime || !endTime) return 0;
+    return (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+  };
+
   const estimatedCost = calculateEstimatedCost();
-  const duration = formData.startDate && formData.endDate 
-    ? reservationClient.calculateDuration(formData.startDate, formData.endDate) 
-    : 0;
+  const duration = calculateDuration();
+
+  // Validaciones personalizadas para eventos
+  const validateReservation = (): string[] => {
+    const errors: string[] = [];
+
+    if (!selectedDate) {
+      errors.push('Selecciona una fecha para tu evento');
+    }
+
+    if (!startTime) {
+      errors.push('Selecciona la hora de inicio');
+    }
+
+    if (!endTime) {
+      errors.push('Selecciona la hora de fin');
+    }
+
+    if (estimatedCapacity < 1) {
+      errors.push('Debe haber al menos 1 invitado');
+    }
+
+    if (estimatedCapacity > space.capacity) {
+      errors.push(`La capacidad no puede exceder ${space.capacity} personas`);
+    }
+
+    if (!eventType) {
+      errors.push('Selecciona el tipo de evento');
+    }
+
+    if (!eventDescription.trim()) {
+      errors.push('Describe brevemente tu evento');
+    }
+
+    if (duration > 0) {
+      if (duration < 1) {
+        errors.push('La duración mínima es de 1 hora');
+      }
+
+      if (duration > maxDuration) {
+        errors.push(`La duración máxima para este tipo de evento es ${maxDuration} horas`);
+      }
+
+      // Validación específica por tipo de evento
+      if (selectedEventType) {
+        const [minDuration, maxEventDuration] = selectedEventType.duration;
+        if (duration < minDuration) {
+          errors.push(`Para ${selectedEventType.label}, la duración mínima recomendada es ${minDuration} horas`);
+        }
+      }
+    }
+
+    return errors;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validar formulario
-    const validation = reservationClient.validateReservationData(formData);
-    if (!validation.isValid) {
-      setValidationErrors(validation.errors);
+    const errors = validateReservation();
+    if (errors.length > 0) {
+      setValidationErrors(errors);
       return;
     }
 
-    // Validar capacidad contra el máximo del espacio
-    if (formData.estimatedCapacity > space.capacity) {
-      setValidationErrors([`La capacidad no puede exceder ${space.capacity} personas`]);
+    if (!startTime || !endTime) {
+      setValidationErrors(['Por favor completa todos los campos requeridos']);
       return;
     }
 
@@ -92,8 +170,23 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
     setValidationErrors([]);
 
     try {
-      console.log('📝 Submitting reservation data:', formData);
-      const result = await reservationClient.createReservation(formData);
+      // Preparar datos para envío
+      const reservationData: CreateReservationRequest = {
+        spaceId: space.id,
+        startDate: startTime.toISOString(),
+        endDate: endTime.toISOString(),
+        estimatedCapacity
+      };
+
+      console.log('📝 Submitting reservation data:', {
+        ...reservationData,
+        eventType,
+        eventDescription,
+        specialRequests,
+        duration: duration + ' hours'
+      });
+
+      const result = await reservationClient.createReservation(reservationData);
       
       console.log('✅ Reservation result received:', result);
       setReservationResult(result);
@@ -106,7 +199,12 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
       console.error('❌ Error creating reservation:', {
         error: error.message,
         stack: error.stack,
-        formData
+        reservationData: {
+          spaceId: space.id,
+          startDate: startTime?.toISOString(),
+          endDate: endTime?.toISOString(),
+          estimatedCapacity
+        }
       });
       
       const errorMessage = error.message || 'Error desconocido al crear la reserva';
@@ -210,7 +308,7 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
             </div>
           </div>
         ) : (
-          // Formulario de reserva
+          // Formulario de reserva mejorado
           <form onSubmit={handleSubmit} className="space-y-6">
             {validationErrors.length > 0 && (
               <Alert variant="destructive">
@@ -225,47 +323,85 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
               </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="startDate">Fecha y Hora de Inicio *</Label>
-                <Input
-                  id="startDate"
-                  type="datetime-local"
-                  value={formData.startDate}
-                  onChange={(e) => handleInputChange('startDate', e.target.value)}
-                  min={reservationClient.getCurrentDateTime()}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="endDate">Fecha y Hora de Fin *</Label>
-                <Input
-                  id="endDate"
-                  type="datetime-local"
-                  value={formData.endDate}
-                  onChange={(e) => handleInputChange('endDate', e.target.value)}
-                  min={formData.startDate || reservationClient.getCurrentDateTime()}
-                  required
-                  disabled={isLoading}
-                />
+            {/* Información del espacio */}
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-lg border border-[#f1893f]/20">
+              <div className="flex items-start gap-3">
+                <MapPin className="w-5 h-5 text-[#f1893f] mt-1 flex-shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-gray-900">{space.name}</h3>
+                  <p className="text-sm text-gray-600 mt-1">{space.location}</p>
+                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
+                    <span className="flex items-center gap-1">
+                      <Users className="w-3 h-3" />
+                      Hasta {space.capacity} personas
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />
+                      ${space.price_formatted}/hora
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
+            {/* Tipo de evento */}
             <div className="space-y-2">
-              <Label htmlFor="estimatedCapacity">Número de Invitados *</Label>
+              <Label className="text-base font-semibold flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                ¿Qué tipo de evento organizarás? *
+              </Label>
+              <Select value={eventType} onValueChange={setEventType} disabled={isLoading}>
+                <SelectTrigger className="h-12">
+                  <SelectValue placeholder="Selecciona el tipo de evento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {EVENT_TYPES.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      <div className="flex flex-col items-start">
+                        <span>{type.label}</span>
+                        <span className="text-xs text-gray-500">
+                          Duración recomendada: {type.duration[0]}-{type.duration[1]} horas
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedEventType && (
+                <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded border border-blue-200">
+                  💡 Para {selectedEventType.label}: duración recomendada entre {selectedEventType.duration[0]} y {selectedEventType.duration[1]} horas
+                </div>
+              )}
+            </div>
+
+            {/* Selector de fecha y horario */}
+            <MonthlyTimeBlockSelector
+              spaceId={space.id}
+              selectedDate={selectedDate}
+              startTime={startTime}
+              endTime={endTime}
+              onDateChange={setSelectedDate}
+              onTimeChange={handleTimeChange}
+              maxDuration={maxDuration}
+            />
+
+            {/* Número de invitados */}
+            <div className="space-y-2">
+              <Label htmlFor="estimatedCapacity" className="text-base font-semibold flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Número de invitados *
+              </Label>
               <div className="relative">
                 <Users className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
                   id="estimatedCapacity"
                   type="number"
-                  value={formData.estimatedCapacity}
-                  onChange={(e) => handleInputChange('estimatedCapacity', parseInt(e.target.value) || 0)}
+                  value={estimatedCapacity}
+                  onChange={(e) => setEstimatedCapacity(parseInt(e.target.value) || 0)}
                   min={1}
                   max={space.capacity}
                   placeholder={`Máximo ${space.capacity} personas`}
-                  className="pl-10"
+                  className="pl-10 h-12"
                   required
                   disabled={isLoading}
                 />
@@ -275,31 +411,85 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
               </p>
             </div>
 
+            {/* Descripción del evento */}
+            <div className="space-y-2">
+              <Label htmlFor="eventDescription" className="text-base font-semibold">
+                Describe tu evento *
+              </Label>
+              <Textarea
+                id="eventDescription"
+                value={eventDescription}
+                onChange={(e) => setEventDescription(e.target.value)}
+                placeholder="Ej: Celebración de cumpleaños para 30 personas con catering incluido..."
+                className="min-h-[80px]"
+                required
+                disabled={isLoading}
+                maxLength={500}
+              />
+              <p className="text-xs text-gray-500">
+                {eventDescription.length}/500 caracteres
+              </p>
+            </div>
+
+            {/* Solicitudes especiales */}
+            <div className="space-y-2">
+              <Label htmlFor="specialRequests">
+                Solicitudes especiales (opcional)
+              </Label>
+              <Textarea
+                id="specialRequests"
+                value={specialRequests}
+                onChange={(e) => setSpecialRequests(e.target.value)}
+                placeholder="Ej: Necesito acceso temprano para decoración, requiero micrófono adicional..."
+                className="min-h-[60px]"
+                disabled={isLoading}
+                maxLength={300}
+              />
+              <p className="text-xs text-gray-500">
+                {specialRequests.length}/300 caracteres
+              </p>
+            </div>
+
+            {/* Resumen de costos */}
             {duration > 0 && estimatedCost && (
               <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-4 rounded-lg border border-[#f1893f]/20">
-                <h4 className="font-medium text-gray-900 mb-3 flex items-center gap-2">
-                  <DollarSign className="w-4 h-4" />
-                  Resumen de Costos
+                <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-[#f1893f]" />
+                  Resumen de tu Reserva
                 </h4>
                 
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-600 flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      Duración:
-                    </span>
-                    <span>{duration.toFixed(1)} horas</span>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">📅 Fecha:</span>
+                      <span className="font-medium">
+                        {selectedDate && format(selectedDate, 'dd MMM yyyy', { locale: es })}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">⏰ Horario:</span>
+                      <span className="font-medium">
+                        {startTime && endTime && `${format(startTime, 'HH:mm')} - ${format(endTime, 'HH:mm')}`}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">⏱️ Duración:</span>
+                      <span className="font-medium">{duration.toFixed(1)} horas</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">👥 Invitados:</span>
+                      <span className="font-medium">{estimatedCapacity} personas</span>
+                    </div>
                   </div>
                   
-                  <div className="flex justify-between">
-                    <span className="text-gray-600">Precio por hora:</span>
-                    <span>${space.price_formatted}/hora</span>
-                  </div>
-                  
-                  <div className="border-t border-[#f1893f]/20 pt-2 mt-2">
+                  <div className="border-t border-[#f1893f]/20 pt-3">
                     <div className="flex justify-between items-center">
-                      <span className="font-semibold text-gray-900">Total Estimado:</span>
-                      <span className="text-lg font-bold text-[#f1893f]">
+                      <span className="text-gray-600">Precio por hora:</span>
+                      <span>${space.price_formatted}/hora</span>
+                    </div>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-lg font-semibold text-gray-900">Total Estimado:</span>
+                      <span className="text-xl font-bold text-[#f1893f]">
                         ${estimatedCost.toLocaleString('es-CO')} COP
                       </span>
                     </div>
@@ -308,20 +498,29 @@ const ReservationModal: React.FC<ReservationModalProps> = ({ isOpen, onClose, sp
               </div>
             )}
 
-            <div className="flex gap-3 justify-end">
+            <div className="flex gap-3 justify-end pt-4">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={handleClose}
                 disabled={isLoading}
+                className="px-6"
               >
                 Cancelar
               </Button>
               
               <Button 
                 type="submit"
-                className="bg-[#f1893f] hover:bg-[#e17a36]"
-                disabled={isLoading || !formData.startDate || !formData.endDate || formData.estimatedCapacity <= 0}
+                className="bg-[#f1893f] hover:bg-[#e17a36] px-6"
+                disabled={
+                  isLoading || 
+                  !selectedDate || 
+                  !startTime || 
+                  !endTime || 
+                  !eventType || 
+                  !eventDescription.trim() ||
+                  estimatedCapacity <= 0
+                }
               >
                 {isLoading ? (
                   <>
