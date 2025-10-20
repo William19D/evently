@@ -17,6 +17,7 @@ import OwnerRegister from "./pages/OwnerRegister";
 import EmailConfirmation from '@/pages/EmailConfirmation';
 import AuthCallback from '@/pages/AuthCallback';
 import RecoverPassword from "./pages/RecoverPassword";
+import ResetPassword from "./pages/ResetPassword";
 
 import EventDetails from "./pages/EventDetails";
 import About from "./pages/About";
@@ -60,6 +61,7 @@ const App = () => (
               <Route path="/RecoverPassword" element={<RecoverPassword />} />
               <Route path="/recover-password" element={<RecoverPassword />} />
               <Route path="/forgot-password" element={<RecoverPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/email-confirmation" element={<EmailConfirmation />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
               <Route path="/mfa-verification" element={<MfaVerification />} />

@@ -33,6 +33,28 @@ Usuario → Formulario (RecoverPassword.tsx)
 - ✅ Alertas de seguridad informativas
 - ✅ Manejo de errores personalizado
 
+### 3. **Componente de Reset Password** - `src/pages/ResetPassword.tsx` (NUEVO)
+- ✅ Validación automática del token de recuperación
+- ✅ Extracción de token desde URL hash (#access_token)
+- ✅ Establecimiento de sesión temporal con Supabase
+- ✅ Formulario de nueva contraseña con validación completa:
+  - Mínimo 8 caracteres
+  - Al menos una mayúscula
+  - Al menos una minúscula
+  - Al menos un número
+  - Al menos un carácter especial
+- ✅ Indicador visual de fortaleza de contraseña (Progress bar)
+- ✅ Mostrar/ocultar contraseñas
+- ✅ Confirmación de contraseña
+- ✅ Validación en tiempo real con feedback visual
+- ✅ Manejo de tokens expirados/inválidos
+- ✅ Cierre de sesión automático después del reset
+- ✅ Redirección al login con mensaje de éxito
+
+### 4. **Rutas** - `src/App.tsx`
+- ✅ Agregada ruta `/reset-password` para establecer nueva contraseña
+- ✅ Rutas existentes para `/recover-password`, `/forgot-password`
+
 ## 🔗 Edge Function
 
 **Endpoint:** `https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/password`
@@ -133,7 +155,20 @@ El email enviado incluye:
    - Envía email vía Resend
 5. **Pantalla de confirmación** → Instrucciones claras
 6. **Usuario recibe email** → Hace clic en enlace
-7. **Redirige a reset-password** → Usuario crea nueva contraseña
+7. **Redirige a `/reset-password`** → Valida token automáticamente
+8. **Validación del token:**
+   - Extrae `access_token` y `refresh_token` del hash URL
+   - Verifica que `type=recovery`
+   - Establece sesión temporal con Supabase
+9. **Usuario ingresa nueva contraseña:**
+   - Ve indicador de fortaleza en tiempo real
+   - Validación completa de requisitos
+   - Confirmación de contraseña
+10. **Sistema actualiza contraseña:**
+    - Llama a `supabase.auth.updateUser()`
+    - Cierra sesión de recuperación
+    - Redirige a login con mensaje de éxito
+11. **Usuario inicia sesión** → Con nueva contraseña
 
 ## ⚠️ Manejo de Errores
 
@@ -165,14 +200,39 @@ toast({
 ## 🧪 Testing
 
 ### Manual Testing Checklist:
-- [ ] Email válido registrado → Recibe email
-- [ ] Email válido no registrado → Mensaje genérico
-- [ ] Email inválido → Error de validación
-- [ ] Email no confirmado → Error específico
-- [ ] Click en enlace del email → Redirige correctamente
-- [ ] Enlace expirado → Mensaje de error
-- [ ] Botón "Volver al login" funciona
-- [ ] Botón "Enviar a otro correo" limpia formulario
+- [ ] **Solicitar recuperación:**
+  - [ ] Email válido registrado → Recibe email
+  - [ ] Email válido no registrado → Mensaje genérico
+  - [ ] Email inválido → Error de validación
+  - [ ] Email no confirmado → Error específico
+- [ ] **Recibir email:**
+  - [ ] Email llega correctamente
+  - [ ] Diseño se ve bien en desktop
+  - [ ] Diseño se ve bien en móvil
+  - [ ] Botón funciona
+  - [ ] Link alternativo funciona
+- [ ] **Reset password:**
+  - [ ] Click en enlace → Abre `/reset-password`
+  - [ ] Token válido → Muestra formulario
+  - [ ] Token inválido → Muestra error
+  - [ ] Token expirado (>1 hora) → Muestra error
+  - [ ] Ingresa contraseña débil → Muestra indicador rojo
+  - [ ] Ingresa contraseña fuerte → Muestra indicador verde
+  - [ ] Contraseñas no coinciden → Error de validación
+  - [ ] Contraseña muy corta (<8) → Error de validación
+  - [ ] Sin mayúscula → Error de validación
+  - [ ] Sin minúscula → Error de validación
+  - [ ] Sin número → Error de validación
+  - [ ] Sin carácter especial → Error de validación
+  - [ ] Todo correcto → Actualiza y redirige
+- [ ] **Después del reset:**
+  - [ ] Puede iniciar sesión con nueva contraseña
+  - [ ] No puede usar la antigua contraseña
+  - [ ] El enlace ya no funciona (uso único)
+- [ ] **Botones:**
+  - [ ] "Volver al login" funciona
+  - [ ] "Solicitar nuevo enlace" funciona
+  - [ ] "Enviar a otro correo" limpia formulario
 
 ### Cypress Test (Sugerido):
 ```typescript
@@ -183,6 +243,32 @@ describe('Password Recovery', () => {
     cy.get('button[type="submit"]').click();
     cy.contains('Revisa tu Email').should('be.visible');
     cy.contains('usuario@ejemplo.com').should('be.visible');
+  });
+
+  it('should reset password successfully', () => {
+    // Simular acceso con token válido
+    cy.visit('/reset-password#access_token=valid_token&type=recovery&refresh_token=refresh');
+    
+    // Esperar validación
+    cy.contains('Nueva Contraseña', { timeout: 5000 }).should('be.visible');
+    
+    // Ingresar nueva contraseña
+    cy.get('#password').type('NewPass123!@#');
+    cy.get('#confirmPassword').type('NewPass123!@#');
+    
+    // Verificar indicador de fortaleza
+    cy.contains('Muy Fuerte').should('be.visible');
+    
+    // Enviar
+    cy.get('button[type="submit"]').click();
+    
+    // Verificar éxito
+    cy.contains('¡Contraseña Actualizada!', { timeout: 5000 }).should('be.visible');
+  });
+
+  it('should show error for invalid token', () => {
+    cy.visit('/reset-password');
+    cy.contains('Enlace Inválido', { timeout: 5000 }).should('be.visible');
   });
 });
 ```

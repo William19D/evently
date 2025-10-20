@@ -13,7 +13,19 @@ export async function requestPasswordRecovery(email: string)
 const EDGE_FUNCTION_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1/password';
 ```
 
-### 2. **Actualizado Componente de Recuperación**
+### 2. **Creado Componente de Reset Password** (NUEVO)
+📁 `src/pages/ResetPassword.tsx`
+
+**Características:**
+- ✅ Validación automática del token de recuperación
+- ✅ Indicador visual de fortaleza de contraseña
+- ✅ Validación con Zod (8+ chars, mayús, minus, número, especial)
+- ✅ Mostrar/ocultar contraseñas
+- ✅ Progreso visual de seguridad
+- ✅ Manejo de tokens expirados/inválidos
+- ✅ Cierre de sesión automático después del reset
+
+### 3. **Actualizado Componente de Recuperación**
 📁 `src/pages/RecoverPassword.tsx`
 
 **Cambios principales:**
@@ -23,8 +35,15 @@ const EDGE_FUNCTION_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1
 - ✅ Manejo de errores robusto
 - ✅ Pantalla de confirmación mejorada
 
-### 3. **Creada Documentación**
+### 4. **Actualizado App.tsx**
+📁 `src/App.tsx`
+
+**Rutas agregadas:**
+- ✅ `/reset-password` → Página para establecer nueva contraseña
+
+### 5. **Creada Documentación**
 📁 `PASSWORD_RECOVERY_IMPLEMENTATION.md`
+📁 `PASSWORD_RECOVERY_SUMMARY.md`
 
 ## 🔄 Flujo Completo
 
@@ -72,8 +91,24 @@ const EDGE_FUNCTION_URL = 'https://xchgmvpzygpenccnidtq.supabase.co/functions/v1
                      │
                      ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  7. Click en link → Redirige a:                            │
-│     https://app.evently.blog/reset-password                 │
+│  7. Click en link → Abre /reset-password con token         │
+│     • Valida token de recuperación (type=recovery)          │
+│     • Establece sesión temporal con Supabase               │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  8. Usuario ingresa nueva contraseña:                      │
+│     • Validación en tiempo real (8+ chars, mayús, etc)     │
+│     • Indicador de fortaleza visual                         │
+│     • Confirmación de contraseña                            │
+└────────────────────┬────────────────────────────────────────┘
+                     │
+                     ▼
+┌─────────────────────────────────────────────────────────────┐
+│  9. Actualiza contraseña con supabase.auth.updateUser()    │
+│     • Cierra sesión de recuperación                         │
+│     • Redirige a login                                      │
 └─────────────────────────────────────────────────────────────┘
 ```
 
