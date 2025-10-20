@@ -95,7 +95,7 @@ if: |
 
 ## 🎯 Escenarios de Prueba
 
-### ✅ Escenario 1: Tests Pasan
+### ✅ Escenario 1: Tests Pasan (Branch Main)
 ```
 ✓ Job 'test' ejecuta
   ✓ npm ci
@@ -108,7 +108,7 @@ if: |
   ✓ Checkout code
   ✓ npm ci
   ✓ npm run build
-  ✓ Vercel deploy
+  ✓ Vercel deploy --prod
   → Deploy SUCCESS ✅
 ```
 
@@ -156,16 +156,18 @@ if: |
 
 ---
 
-### ❌ Escenario 5: Branch Incorrecta
+### ❌ Escenario 5: Branch Diferente a Main
 ```
-✓ Job 'test' ejecuta en branch 'develop'
+✓ Job 'test' ejecuta en branch 'develop' o 'feature/xyz'
   ✓ Todos los tests pasan
   → Job 'test' marca como SUCCESS
   
 ✗ Job 'deploy' verifica:
   ✓ success() = true
-  ✗ github.ref == 'main' (es 'develop')
-  → Deploy BLOQUEADO ⛔ (solo deploy-preview se ejecuta)
+  ✗ github.ref == 'main' (es otra branch)
+  → Deploy BLOQUEADO ⛔
+  
+ℹ️ Nota: Ya no hay deploy-preview, fue removido del workflow
 ```
 
 ---
@@ -189,19 +191,24 @@ if: |
 
 ```mermaid
 graph TD
-    A[Push to main] --> B[Job: test]
-    B --> C{Build OK?}
-    C -->|No| D[❌ STOP - Deploy BLOQUEADO]
-    C -->|Yes| E{Tests OK?}
-    E -->|No| D
-    E -->|Yes| F[✅ test SUCCESS]
-    F --> G{needs: test?}
-    G -->|test = success| H[Job: deploy EJECUTA]
-    G -->|test = failure| D
-    H --> I{if: success() && main?}
-    I -->|No| D
-    I -->|Yes| J[🚀 Deploy to Vercel]
-    J --> K[✅ DEPLOYED]
+    A[Push to Repository] --> B{Branch?}
+    B -->|main| C[Job: test]
+    B -->|other| D[Job: test solo]
+    C --> E{Build OK?}
+    D --> E
+    E -->|No| F[❌ STOP - Deploy BLOQUEADO]
+    E -->|Yes| G{Tests OK?}
+    G -->|No| F
+    G -->|Yes| H[✅ test SUCCESS]
+    H --> I{Branch = main?}
+    I -->|No| J[✅ Test completado - Sin deploy]
+    I -->|Yes| K{needs: test?}
+    K -->|test = success| L[Job: deploy EJECUTA]
+    K -->|test = failure| F
+    L --> M{if: success() && main?}
+    M -->|No| F
+    M -->|Yes| N[🚀 Deploy to Vercel --prod]
+    N --> O[✅ DEPLOYED]
 ```
 
 ---
@@ -312,4 +319,6 @@ gh run rerun [RUN_ID]
 ---
 
 **Última actualización**: Octubre 20, 2025  
-**Status**: ✅ VERIFICADO - Deploy 100% protegido contra tests fallidos
+**Status**: ✅ VERIFICADO - Deploy 100% protegido contra tests fallidos  
+**Jobs activos**: 2 (test + deploy production)  
+**Jobs removidos**: deploy-preview (estaba siendo skipped)
