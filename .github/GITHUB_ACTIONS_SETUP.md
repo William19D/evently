@@ -18,21 +18,16 @@ Debes configurar los siguientes secrets en tu repositorio de GitHub:
 
 **Ruta**: `Settings` → `Secrets and variables` → `Actions` → `New repository secret`
 
-#### Secrets Requeridos:
+#### Secrets Requeridos (solo 3):
 
 ```yaml
-# Supabase
-VITE_SUPABASE_URL: "https://tu-proyecto.supabase.co"
-VITE_SUPABASE_ANON_KEY: "tu-anon-key-de-supabase"
-
-# reCAPTCHA
-VITE_RECAPTCHA_SITE_KEY: "tu-site-key-de-recaptcha"
-
 # Vercel (para despliegue)
 VERCEL_TOKEN: "tu-vercel-token"
-VERCEL_ORG_ID: "tu-org-id"
-VERCEL_PROJECT_ID: "tu-project-id"
+ORG_ID: "tu-org-id"
+PROJECT_ID: "tu-project-id"
 ```
+
+> **Nota:** Las variables de entorno de Supabase y reCAPTCHA (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_RECAPTCHA_SITE_KEY`) se configuran directamente en **Vercel Project Settings → Environment Variables**, no en GitHub Secrets.
 
 ### 2. Obtener Tokens de Vercel
 

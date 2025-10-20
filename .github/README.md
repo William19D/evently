@@ -18,13 +18,12 @@ Este directorio contiene la configuración de automatización para CI/CD del pro
 Ve a `Settings` → `Secrets and variables` → `Actions` y agrega:
 
 ```
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-VITE_RECAPTCHA_SITE_KEY
 VERCEL_TOKEN
-VERCEL_ORG_ID
-VERCEL_PROJECT_ID
+ORG_ID
+PROJECT_ID
 ```
+
+> **Nota:** Las variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `VITE_RECAPTCHA_SITE_KEY` se configuran en Vercel Dashboard → Environment Variables.
 
 ### 2. Trigger Manual
 

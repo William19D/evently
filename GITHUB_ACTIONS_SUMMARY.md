@@ -70,18 +70,18 @@ Acciones:
 
 Para que el workflow funcione, configura estos 6 secrets en GitHub:
 
-### Supabase (3 secrets)
+### Vercel Secrets (3):
 ```yaml
-VITE_SUPABASE_URL: "https://tu-proyecto.supabase.co"
-VITE_SUPABASE_ANON_KEY: "eyJ..."
-VITE_RECAPTCHA_SITE_KEY: "6Le..."
+VERCEL_TOKEN       # Token de autenticación
+ORG_ID            # ID de organización
+PROJECT_ID        # ID del proyecto
 ```
 
-### Vercel (3 secrets)
+### Variables de Entorno en Vercel:
 ```yaml
-VERCEL_TOKEN: "..."
-VERCEL_ORG_ID: "team_..."
-VERCEL_PROJECT_ID: "prj_..."
+VITE_SUPABASE_URL          # URL de Supabase
+VITE_SUPABASE_ANON_KEY     # Anon Key
+VITE_RECAPTCHA_SITE_KEY    # reCAPTCHA Key
 ```
 
 ## 📊 Proceso de CI/CD

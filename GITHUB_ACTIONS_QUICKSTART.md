@@ -6,23 +6,17 @@
 
 Ve a: `https://github.com/William19D/evently/settings/secrets/actions`
 
-Agrega estos 6 secrets:
+Agrega estos 3 secrets:
 
 ```
-VITE_SUPABASE_URL
-VITE_SUPABASE_ANON_KEY
-VITE_RECAPTCHA_SITE_KEY
 VERCEL_TOKEN
-VERCEL_ORG_ID
-VERCEL_PROJECT_ID
+ORG_ID
+PROJECT_ID
 ```
+
+> **Nota:** Las variables `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` y `VITE_RECAPTCHA_SITE_KEY` se configuran en Vercel Dashboard → Environment Variables.
 
 ### 2️⃣ ¿Cómo obtener los valores?
-
-#### Supabase:
-```
-Dashboard → Settings → API
-```
 
 #### Vercel:
 ```bash
