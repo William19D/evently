@@ -59,6 +59,44 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Supabase (Authentication & Database)
+- Cypress (E2E Testing)
+
+## 🧪 Testing
+
+This project includes comprehensive E2E tests using Cypress.
+
+### Running Tests
+
+```bash
+# Open Cypress in interactive mode
+npm run cypress:open
+npm run test:e2e:ui
+
+# Run all tests in headless mode
+npm run cypress:run
+npm run test:e2e
+
+# Run specific test suites
+npx cypress run --spec "cypress/e2e/client-login.cy.ts"
+npx cypress run --spec "cypress/e2e/client-register.cy.ts"
+npx cypress run --spec "cypress/e2e/auth-flow.cy.ts"
+
+# Using PowerShell script (Windows)
+.\run-tests.ps1           # Interactive mode
+.\run-tests.ps1 run       # Headless mode
+.\run-tests.ps1 login     # Only login tests
+.\run-tests.ps1 register  # Only register tests
+.\run-tests.ps1 flow      # Only flow tests
+```
+
+### Test Coverage
+
+- ✅ **Client Login** - 90+ test cases
+- ✅ **Client Register** - 100+ test cases  
+- ✅ **Auth Flows** - 30+ integration test cases
+
+For detailed testing documentation, see [cypress/README.md](cypress/README.md) and [CYPRESS_IMPLEMENTATION.md](CYPRESS_IMPLEMENTATION.md).
 
 ## How can I deploy this project?
 

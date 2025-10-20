@@ -1,0 +1,13 @@
+# Cypress
+cypress/screenshots
+cypress/videos
+cypress/downloads
+cypress.env.json
+
+# Test results
+test-results/
+*.xml
+
+# Coverage
+coverage/
+.nyc_output/

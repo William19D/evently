@@ -12,10 +12,12 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import PageLayout from "@/components/PageLayout";
 import MfaSetup from "@/components/MfaSetup";
+import DeleteAccountModal from "@/components/DeleteAccountModal";
 
 const UserProfile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
@@ -235,12 +237,7 @@ const UserProfile = () => {
                 <Button 
                   variant="destructive" 
                   className="mt-4 w-full"
-                  onClick={() => {
-                    toast({
-                      title: "Función no disponible",
-                      description: "Contacta a soporte para eliminar tu cuenta.",
-                    });
-                  }}
+                  onClick={() => setShowDeleteModal(true)}
                 >
                   Eliminar Cuenta
                 </Button>
@@ -249,6 +246,12 @@ const UserProfile = () => {
           </div>
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </PageLayout>
   );
 };

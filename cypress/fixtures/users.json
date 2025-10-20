@@ -1,0 +1,38 @@
+{
+  "users": {
+    "validClient": {
+      "firstName": "Juan",
+      "lastName": "Pérez",
+      "email": "juan.perez@example.com",
+      "phone": "3167894567",
+      "password": "Password123!"
+    },
+    "invalidEmail": {
+      "firstName": "María",
+      "lastName": "González",
+      "email": "email-invalido",
+      "phone": "3001234567",
+      "password": "Password123!"
+    },
+    "shortPassword": {
+      "firstName": "Carlos",
+      "lastName": "Rodríguez",
+      "email": "carlos@example.com",
+      "phone": "3159876543",
+      "password": "12345"
+    },
+    "existingUser": {
+      "email": "existing@example.com",
+      "password": "ExistingPassword123!"
+    }
+  },
+  "errorMessages": {
+    "invalidCredentials": "Invalid login credentials",
+    "userAlreadyRegistered": "User already registered",
+    "emailRequired": "El correo electrónico es requerido",
+    "passwordRequired": "La contraseña es requerida",
+    "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+    "passwordsDoNotMatch": "Las contraseñas no coinciden",
+    "acceptTerms": "Debes aceptar los términos y condiciones"
+  }
+}
