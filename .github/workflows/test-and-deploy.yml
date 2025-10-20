@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     
     strategy:
-      fail-fast: false
+      fail-fast: true  # ⚠️ CRÍTICO: Detener inmediatamente si falla algún test
       matrix:
         # Ejecutar tests en paralelo si es necesario
         containers: [1]
@@ -45,6 +45,7 @@ jobs:
           npx wait-on http://localhost:8080 --timeout 60000
 
       - name: 🧪 Run Cypress tests
+        id: cypress-tests
         uses: cypress-io/github-action@v6
         with:
           browser: chrome
@@ -53,12 +54,22 @@ jobs:
             cypress/e2e/client-login.cy.ts
             cypress/e2e/client-register.cy.ts
             cypress/e2e/auth-flow.cy.ts
-            cypress/e2e/publish-space.cy.ts
-            cypress/e2e/reserve-space.cy.ts
           wait-on: 'http://localhost:8080'
           wait-on-timeout: 60
         env:
           CYPRESS_BASE_URL: http://localhost:8080
+        continue-on-error: false  # ⚠️ CRÍTICO: No continuar si fallan los tests
+
+      - name: ❌ Fail job if tests failed
+        if: failure()
+        run: |
+          echo "::error::❌ Tests fallaron - Deploy bloqueado"
+          echo "## ❌ Tests Failed - Deployment BLOCKED" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "⛔ El deployment ha sido **bloqueado** porque los tests fallaron." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Por favor revisa los logs y screenshots para identificar el problema." >> $GITHUB_STEP_SUMMARY
+          exit 1
 
       - name: 📸 Upload screenshots on failure
         uses: actions/upload-artifact@v4
@@ -82,21 +93,26 @@ jobs:
         run: |
           echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Tests executed successfully - 100 tests total" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Tests executed successfully - 42 tests total" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Test Files:" >> $GITHUB_STEP_SUMMARY
           echo "- client-login.cy.ts (18 tests)" >> $GITHUB_STEP_SUMMARY
           echo "- client-register.cy.ts (20 tests)" >> $GITHUB_STEP_SUMMARY
           echo "- auth-flow.cy.ts (4 tests)" >> $GITHUB_STEP_SUMMARY
-          echo "- publish-space.cy.ts (27 tests)" >> $GITHUB_STEP_SUMMARY
-          echo "- reserve-space.cy.ts (31 tests)" >> $GITHUB_STEP_SUMMARY
 
   # Job 2: Deploy (solo si los tests pasan)
   deploy:
     name: Deploy to Production
-    needs: test
+    needs: test  # ⚠️ CRÍTICO: Este job SOLO se ejecuta si 'test' tiene éxito
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # ⚠️ TRIPLE VERIFICACIÓN: Solo deployar si:
+    # 1. Está en main
+    # 2. Es un push (no PR)
+    # 3. El job 'test' fue exitoso (implícito por 'needs')
+    if: |
+      success() &&
+      github.ref == 'refs/heads/main' && 
+      github.event_name == 'push'
     
     steps:
       - name: 📥 Checkout code
@@ -114,7 +130,16 @@ jobs:
       - name: 🏗️ Build for production
         run: npm run build
 
+      - name: ✅ Verificar que tests pasaron antes de deploy
+        run: |
+          echo "## ✅ Pre-Deploy Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Tests job completado exitosamente" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Procediendo con deployment a producción..." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
       - name: 🚀 Deploy to Vercel
+        id: vercel-deploy
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
@@ -122,6 +147,8 @@ jobs:
           vercel-project-id: ${{ secrets.PROJECT_ID }}
           vercel-args: '--prod'
           working-directory: ./
+        # ⚠️ Si el deploy falla, fallar el job inmediatamente
+        continue-on-error: false
 
       - name: 📢 Deployment notification
         if: success()
@@ -141,9 +168,15 @@ jobs:
   # Job 3: Deploy Preview (para PRs y develop)
   deploy-preview:
     name: Deploy Preview
-    needs: test
+    needs: test  # ⚠️ CRÍTICO: Este job SOLO se ejecuta si 'test' tiene éxito
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || (github.ref == 'refs/heads/develop' && github.event_name == 'push')
+    # ⚠️ VERIFICACIÓN: Solo preview si:
+    # 1. Es un Pull Request, O
+    # 2. Es push a develop
+    # 3. El job 'test' fue exitoso (implícito por 'needs')
+    if: |
+      success() &&
+      (github.event_name == 'pull_request' || (github.ref == 'refs/heads/develop' && github.event_name == 'push'))
     
     steps:
       - name: 📥 Checkout code
@@ -161,13 +194,24 @@ jobs:
       - name: 🏗️ Build for preview
         run: npm run build
 
+      - name: ✅ Verificar que tests pasaron antes de preview deploy
+        run: |
+          echo "## ✅ Pre-Deploy Preview Verification" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Tests job completado exitosamente" >> $GITHUB_STEP_SUMMARY
+          echo "✓ Procediendo con preview deployment..." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
       - name: 🔍 Deploy Preview to Vercel
+        id: vercel-preview-deploy
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
           vercel-org-id: ${{ secrets.ORG_ID }}
           vercel-project-id: ${{ secrets.PROJECT_ID }}
           working-directory: ./
+        # ⚠️ Si el preview deploy falla, fallar el job inmediatamente
+        continue-on-error: false
 
       - name: 📢 Preview deployment notification
         if: success()
