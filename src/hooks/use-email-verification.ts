@@ -24,10 +24,28 @@ export const useEmailVerificationHandler = () => {
           return;
         }
 
+        // 🔐 NUEVO: Verificar si es un token de recuperación de contraseña
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const tokenType = hashParams.get('type');
+        
+        // Si es un token de recuperación, NO lo manejamos aquí
+        // Dejar que ResetPassword.tsx lo maneje
+        if (tokenType === 'recovery') {
+          console.log('🔐 useEmailVerificationHandler: Recovery token detected, skipping handler');
+          return;
+        }
+
+        // Si estamos en la ruta /reset-password, no interceptar
+        if (window.location.pathname === '/reset-password') {
+          console.log('🔐 useEmailVerificationHandler: On reset-password route, skipping handler');
+          return;
+        }
+
         console.log('🔄 useEmailVerificationHandler: Detected callback URL', {
           currentUrl: currentUrl.substring(0, 100) + '...',
           hasHash: !!window.location.hash,
-          hashLength: window.location.hash.length
+          hashLength: window.location.hash.length,
+          tokenType: tokenType || 'none'
         });
 
         // Procesar los parámetros de autenticación de Supabase
