@@ -10,9 +10,10 @@ import { Eye, EyeOff, Mail, Lock, ArrowLeft, Chrome, AlertCircle, User } from "l
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRecaptcha } from "@/hooks/use-recaptcha";
-import { getDisplayError } from "@/utils/errorMessages";
+import { getDisplayError, getParsedError } from "@/utils/errorMessages";
 import MfaLogin from "@/components/MfaLogin";
 import RecaptchaBadge from "@/components/RecaptchaBadge";
+import EnhancedErrorAlert from "@/components/EnhancedErrorAlert";
 import { envTest } from "@/lib/envTest";
 import authBackground from "@/assets/auth-background.jpg";
 
@@ -24,7 +25,7 @@ const ClientLogin = () => {
   const [showMfaDialog, setShowMfaDialog] = useState(false);
   const [recaptchaLoading, setRecaptchaLoading] = useState(false);
   const [recaptchaVerified, setRecaptchaVerified] = useState(false);
-  const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
+  const [errors, setErrors] = useState<{email?: string, password?: string, general?: string, type?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const { user, signIn } = useAuth();
@@ -132,17 +133,23 @@ const ClientLogin = () => {
       if (result.error) {
         console.log('❌ ClientLogin: Login error:', result.error);
         
-        // Usar el sistema de manejo de errores user-friendly
-        const errorMessage = getDisplayError(result.error || result);
-        console.log('📢 User-friendly login error:', errorMessage);
+        // Usar el sistema de manejo de errores user-friendly con tipo
+        const parsedError = getParsedError(result.error || result);
+        console.log('📢 User-friendly login error:', parsedError);
         
-        setErrors({ general: errorMessage });
-        
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: errorMessage,
+        setErrors({ 
+          general: parsedError.message,
+          type: parsedError.type
         });
+        
+        // Solo mostrar toast si no es error de verificación (ya que el componente visual es más informativo)
+        if (parsedError.type !== 'verification') {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: parsedError.message,
+          });
+        }
         setIsLoading(false);
         return;
       }
@@ -156,24 +163,33 @@ const ClientLogin = () => {
       
       // Manejar errores específicos de reCAPTCHA
       const errorMessage = error instanceof Error ? error.message : String(error);
-      let friendlyErrorMessage: string;
+      let parsedError;
       
       if (errorMessage.toLowerCase().includes('recaptcha')) {
-        friendlyErrorMessage = "Error de verificación de seguridad. Por favor, intenta nuevamente.";
+        parsedError = {
+          message: "Error de verificación de seguridad. Por favor, intenta nuevamente.",
+          type: 'server' as const
+        };
       } else {
         // Usar el sistema de manejo de errores user-friendly
-        friendlyErrorMessage = getDisplayError(error);
+        parsedError = getParsedError(error);
       }
       
-      console.log('📢 User-friendly login exception:', friendlyErrorMessage);
+      console.log('📢 User-friendly login exception:', parsedError);
       
-      setErrors({ general: friendlyErrorMessage });
-      
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: friendlyErrorMessage,
+      setErrors({ 
+        general: parsedError.message,
+        type: parsedError.type
       });
+      
+      // Solo mostrar toast si no es error de verificación
+      if (parsedError.type !== 'verification') {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: parsedError.message,
+        });
+      }
       
       setIsLoading(false);
     } finally {
@@ -247,10 +263,18 @@ const ClientLogin = () => {
             )}
             
             {errors.general && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.general}</AlertDescription>
-              </Alert>
+              <EnhancedErrorAlert
+                error={errors.general}
+                type={errors.type as any}
+                onRetry={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+                onResendVerification={() => {
+                  // Aquí podrías agregar lógica para reenviar email de verificación
+                  toast({
+                    title: "Funcionalidad próximamente",
+                    description: "La función de reenvío estará disponible pronto.",
+                  });
+                }}
+              />
             )}
 
             <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20">

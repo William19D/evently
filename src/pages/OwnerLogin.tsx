@@ -9,7 +9,9 @@ import { Eye, EyeOff, Mail, Lock, ArrowLeft, AlertCircle, Building2 } from "luci
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRecaptcha } from "@/hooks/use-recaptcha";
+import { getParsedError } from "@/utils/errorMessages";
 import MfaLogin from "@/components/MfaLogin";
+import EnhancedErrorAlert from "@/components/EnhancedErrorAlert";
 import RecaptchaBadge from "@/components/RecaptchaBadge";
 import RecaptchaConfigError from "@/components/RecaptchaConfigError";
 import authBackground from "@/assets/auth-background.jpg";
@@ -22,7 +24,7 @@ const OwnerLogin = () => {
   const [showMfaDialog, setShowMfaDialog] = useState(false);
   const [recaptchaLoading, setRecaptchaLoading] = useState(false);
   const [recaptchaVerified, setRecaptchaVerified] = useState(false);
-  const [errors, setErrors] = useState<{email?: string, password?: string, general?: string}>({});
+  const [errors, setErrors] = useState<{email?: string, password?: string, general?: string, type?: string}>({});
   const { toast } = useToast();
   const navigate = useNavigate();
   const { signIn, user } = useAuth();
@@ -90,30 +92,20 @@ const OwnerLogin = () => {
           }, 100);
         }
       } else {
-        // Handle login errors
-        if (result.error?.includes('Credenciales inválidas') || result.error?.includes('Invalid login credentials')) {
-          setErrors({
-            general: "Credenciales inválidas. Verifica tu email y contraseña."
-          });
-        } else if (result.error?.includes('Email not confirmed') || result.error?.includes('verificar tu email')) {
-          setErrors({
-            general: result.error
-          });
-          // Show option to resend verification
-          setTimeout(() => {
-            if (window.confirm('¿Quieres que te reenviemos el código de verificación?')) {
-              navigate("/verify-email", {
-                state: {
-                  email: email,
-                  role: 'owner',
-                  fromLogin: true
-                }
-              });
-            }
-          }, 2000);
-        } else {
-          setErrors({
-            general: result.error || "Error al iniciar sesión"
+        // Handle login errors with enhanced error parsing
+        const parsedError = getParsedError(result.error || result);
+        
+        setErrors({
+          general: parsedError.message,
+          type: parsedError.type
+        });
+        
+        // Solo mostrar toast si no es error de verificación
+        if (parsedError.type !== 'verification') {
+          toast({
+            variant: "destructive",
+            title: "Error",
+            description: parsedError.message,
           });
         }
       }
@@ -191,10 +183,17 @@ const OwnerLogin = () => {
 
           <CardContent className="space-y-6">
             {errors.general && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertDescription>{errors.general}</AlertDescription>
-              </Alert>
+              <EnhancedErrorAlert
+                error={errors.general}
+                type={errors.type as any}
+                onRetry={() => handleSubmit({ preventDefault: () => {} } as React.FormEvent)}
+                onResendVerification={() => {
+                  toast({
+                    title: "Funcionalidad próximamente",
+                    description: "La función de reenvío estará disponible pronto.",
+                  });
+                }}
+              />
             )}
 
             <Alert className="bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20">

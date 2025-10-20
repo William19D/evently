@@ -4,7 +4,7 @@
 
 export interface ParsedError {
   message: string;
-  type: 'validation' | 'auth' | 'network' | 'server' | 'unknown';
+  type: 'validation' | 'auth' | 'network' | 'server' | 'verification' | 'unknown';
   field?: string;
 }
 
@@ -13,41 +13,88 @@ export interface ParsedError {
  */
 export function extractServerMessage(error: any): string | null {
   try {
-    // Si el error ya es un string simple
-    if (typeof error === 'string') {
-      return error;
-    }
+    console.log('🔍 Extracting message from error:', error);
 
-    // Si el error tiene un mensaje directo
-    if (error?.message && typeof error.message === 'string') {
-      // Buscar JSON embebido en el mensaje
-      const jsonMatch = error.message.match(/{"error":"([^"]+)"/);
+    // Si el error ya es un string, procesarlo
+    if (typeof error === 'string') {
+      // Buscar JSON embebido en strings que contienen HTTP info
+      const jsonMatch = error.match(/\{"error":"([^"]+)"[^}]*\}/);
       if (jsonMatch) {
+        console.log('✅ Extracted from JSON in string:', jsonMatch[1]);
         return jsonMatch[1];
       }
       
-      // Si no hay JSON, usar el mensaje tal como está (pero filtrar info técnica)
-      if (!error.message.includes('HTTP') && !error.message.includes('stack')) {
+      // Si no contiene info técnica, retornarlo tal como está
+      if (!error.includes('HTTP') && !error.includes('timestamp') && !error.includes('requestId')) {
+        console.log('✅ Clean string message:', error);
+        return error;
+      }
+      
+      // Si contiene HTTP pero tiene un mensaje después de los dos puntos
+      const httpMatch = error.match(/HTTP \d+:\s*(.+?)(?:\s*$|\s*\{"timestamp)/);
+      if (httpMatch && httpMatch[1]) {
+        try {
+          // Intentar parsear como JSON
+          const parsed = JSON.parse(httpMatch[1]);
+          if (parsed.error) {
+            console.log('✅ Extracted from HTTP message JSON:', parsed.error);
+            return parsed.error;
+          }
+        } catch {
+          // Si no es JSON válido, usar el mensaje tal como está
+          console.log('✅ Extracted from HTTP message text:', httpMatch[1]);
+          return httpMatch[1].trim();
+        }
+      }
+    }
+
+    // Si el error es un objeto con propiedad error
+    if (error?.error && typeof error.error === 'string') {
+      console.log('✅ Direct error property:', error.error);
+      return error.error;
+    }
+
+    // Si el error tiene un mensaje directo en un objeto
+    if (error?.message && typeof error.message === 'string') {
+      // Buscar JSON embebido en el mensaje
+      const jsonMatch = error.message.match(/\{"error":"([^"]+)"[^}]*\}/);
+      if (jsonMatch) {
+        console.log('✅ Extracted from message JSON:', jsonMatch[1]);
+        return jsonMatch[1];
+      }
+      
+      // Si no hay JSON y no contiene info técnica, usar el mensaje tal como está
+      if (!error.message.includes('HTTP') && !error.message.includes('stack') && !error.message.includes('timestamp')) {
+        console.log('✅ Clean message property:', error.message);
         return error.message;
       }
     }
 
-    // Si el error tiene una propiedad error directa
-    if (error?.error && typeof error.error === 'string') {
-      return error.error;
-    }
-
     // Si el error completo está en fullError
     if (error?.fullError?.message) {
-      const jsonMatch = error.fullError.message.match(/{"error":"([^"]+)"/);
+      const jsonMatch = error.fullError.message.match(/\{"error":"([^"]+)"[^}]*\}/);
       if (jsonMatch) {
+        console.log('✅ Extracted from fullError JSON:', jsonMatch[1]);
         return jsonMatch[1];
       }
     }
 
+    // Si es un objeto de respuesta con data
+    if (error?.data?.error) {
+      console.log('✅ Error from data property:', error.data.error);
+      return error.data.error;
+    }
+
+    // Si es un objeto de respuesta directa
+    if (error?.response?.data?.error) {
+      console.log('✅ Error from response.data:', error.response.data.error);
+      return error.response.data.error;
+    }
+
+    console.log('❌ Could not extract message from error');
     return null;
   } catch (e) {
-    console.warn('Error parsing server message:', e);
+    console.warn('❌ Error parsing server message:', e);
     return null;
   }
 }
@@ -65,6 +112,18 @@ export function parseError(error: any): ParsedError {
   if (serverMessage) {
     // Mapear mensajes específicos del servidor
     const lowerMessage = serverMessage.toLowerCase();
+
+    // Errores de verificación de email
+    if (lowerMessage.includes('email not confirmed') || 
+        lowerMessage.includes('email no confirmado') ||
+        lowerMessage.includes('not confirmed') ||
+        lowerMessage.includes('verificar email') ||
+        lowerMessage.includes('confirmar email')) {
+      return {
+        message: 'Debes verificar tu email antes de poder iniciar sesión.',
+        type: 'verification'
+      };
+    }
 
     // Errores de usuario existente
     if (lowerMessage.includes('usuario ya existe')) {
@@ -125,8 +184,10 @@ export function parseError(error: any): ParsedError {
       };
     }
 
-    // Errores de verificación
-    if (lowerMessage.includes('verification') || lowerMessage.includes('verificación')) {
+    // Errores de verificación y email no confirmado
+    if (lowerMessage.includes('verification') || lowerMessage.includes('verificación') || 
+        lowerMessage.includes('email not confirmed') || lowerMessage.includes('not confirmed') ||
+        lowerMessage.includes('verificar tu email') || lowerMessage.includes('confirm your email')) {
       if (lowerMessage.includes('code') || lowerMessage.includes('código')) {
         return {
           message: 'Código de verificación incorrecto. Intenta de nuevo.',
@@ -134,8 +195,8 @@ export function parseError(error: any): ParsedError {
         };
       }
       return {
-        message: 'Error en la verificación. Por favor intenta de nuevo.',
-        type: 'auth'
+        message: 'Tu email no ha sido verificado. Revisa tu bandeja de entrada y haz clic en el enlace de verificación que te enviamos.',
+        type: 'verification'
       };
     }
 
@@ -226,4 +287,11 @@ export function parseError(error: any): ParsedError {
 export function getDisplayError(error: any): string {
   const parsed = parseError(error);
   return parsed.message;
+}
+
+/**
+ * Hook para obtener el error parseado completo con tipo
+ */
+export function getParsedError(error: any): ParsedError {
+  return parseError(error);
 }

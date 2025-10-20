@@ -27,7 +27,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, className = "" }) => {
     const routeNames: Record<string, string> = {
       'spaces': 'Espacios Públicos',
       'events': 'Eventos',
-      'about': 'Acerca de',
+      'about': 'Nosotros',
       'contact': 'Contacto',
       'faq': 'Preguntas Frecuentes',
       'login': 'Iniciar Sesión',

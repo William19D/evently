@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { User, Menu, ChevronDown, Building2, LogOut, Shield, Settings, Users } from "lucide-react";
+import { User, Menu, ChevronDown, Building2, LogOut, Users } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +9,7 @@ import Logo from "@/components/Logo";
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, isMfaEnabled, signOut } = useAuth();
+  const { user, signOut } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -100,20 +100,6 @@ const Navigation = () => {
                         </Link>
                       </DropdownMenuItem>
                     )}
-
-                    <DropdownMenuItem asChild>
-                      <Link to="/mfa-setup" className="flex items-center">
-                        <Shield className="w-4 h-4 mr-2" />
-                        <span>MFA {isMfaEnabled ? '(Activo)' : '(Inactivo)'}</span>
-                      </Link>
-                    </DropdownMenuItem>
-
-                    <DropdownMenuItem asChild>
-                      <Link to="/settings" className="flex items-center">
-                        <Settings className="w-4 h-4 mr-2" />
-                        Configuración
-                      </Link>
-                    </DropdownMenuItem>
 
                     <DropdownMenuItem onClick={handleSignOut} className="flex items-center text-destructive focus:text-destructive">
                       <LogOut className="w-4 h-4 mr-2" />
