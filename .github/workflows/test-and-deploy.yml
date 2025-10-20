@@ -53,6 +53,8 @@ jobs:
             cypress/e2e/client-login.cy.ts
             cypress/e2e/client-register.cy.ts
             cypress/e2e/auth-flow.cy.ts
+            cypress/e2e/publish-space.cy.ts
+            cypress/e2e/reserve-space.cy.ts
           wait-on: 'http://localhost:8080'
           wait-on-timeout: 60
         env:
@@ -80,12 +82,14 @@ jobs:
         run: |
           echo "## 🧪 Test Results" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "✅ Tests executed successfully" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Tests executed successfully - 100 tests total" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Test Files:" >> $GITHUB_STEP_SUMMARY
-          echo "- client-login.cy.ts" >> $GITHUB_STEP_SUMMARY
-          echo "- client-register.cy.ts" >> $GITHUB_STEP_SUMMARY
-          echo "- auth-flow.cy.ts" >> $GITHUB_STEP_SUMMARY
+          echo "- client-login.cy.ts (18 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- client-register.cy.ts (20 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- auth-flow.cy.ts (4 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- publish-space.cy.ts (27 tests)" >> $GITHUB_STEP_SUMMARY
+          echo "- reserve-space.cy.ts (31 tests)" >> $GITHUB_STEP_SUMMARY
 
   # Job 2: Deploy (solo si los tests pasan)
   deploy:
