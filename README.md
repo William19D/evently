@@ -92,11 +92,37 @@ npx cypress run --spec "cypress/e2e/auth-flow.cy.ts"
 
 ### Test Coverage
 
-- ✅ **Client Login** - 90+ test cases
-- ✅ **Client Register** - 100+ test cases  
-- ✅ **Auth Flows** - 30+ integration test cases
+- ✅ **Client Login** - 18 test cases
+- ✅ **Client Register** - 20 test cases  
+- ✅ **Auth Flows** - 4 integration test cases
+- **Total: 42 tests - 100% passing** ✅
 
-For detailed testing documentation, see [cypress/README.md](cypress/README.md) and [CYPRESS_IMPLEMENTATION.md](CYPRESS_IMPLEMENTATION.md).
+For detailed testing documentation, see [cypress/README.md](cypress/README.md) and [CYPRESS_IMPLEMENTATION.md](CYPRESS_IMPLEMENTATION.md)
+
+## 🚀 CI/CD
+
+This project uses GitHub Actions for automated testing and deployment.
+
+### Automated Workflows
+
+- **On Push to `main`**: Run tests → Deploy to production (if tests pass)
+- **On Pull Request**: Run tests → Deploy preview environment
+- **On Push to `develop`**: Run tests → Deploy to staging
+
+### Setup CI/CD
+
+1. Configure GitHub Secrets (see [.github/GITHUB_ACTIONS_SETUP.md](.github/GITHUB_ACTIONS_SETUP.md))
+2. Push to `main` or create a PR
+3. Workflow runs automatically
+
+### View Test Results
+
+Go to the `Actions` tab in GitHub to see:
+- Test execution logs
+- Screenshots on failure
+- Deployment status
+
+For complete CI/CD documentation, see [.github/GITHUB_ACTIONS_SETUP.md](.github/GITHUB_ACTIONS_SETUP.md).
 
 ## How can I deploy this project?
 
