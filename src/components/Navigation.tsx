@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { User, Menu, ChevronDown, Building2, LogOut, Users } from "lucide-react";
+import { User, Menu, ChevronDown, Building2, LogOut, Users, Calendar } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -91,6 +91,15 @@ const Navigation = () => {
                         Perfil
                       </Link>
                     </DropdownMenuItem>
+                    
+                    {user.role === 'member' && (
+                      <DropdownMenuItem asChild>
+                        <Link to="/my-reservations" className="flex items-center">
+                          <Calendar className="w-4 h-4 mr-2" />
+                          Mis Reservas
+                        </Link>
+                      </DropdownMenuItem>
+                    )}
                     
                     {user.role === 'owner' && (
                       <DropdownMenuItem asChild>

@@ -36,6 +36,8 @@ import SuperadminLogin from "./pages/SuperadminLogin";
 import SuperadminDashboard from "./pages/SuperadminDashboard";
 import PublicSpaces from "./pages/PublicSpaces";
 import PublicSpaceDetail from "./pages/PublicSpaceDetail";
+import ClientReservations from "./pages/ClientReservations";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import EmailVerificationHandler from "./components/EmailVerificationHandler";
 
 const queryClient = new QueryClient();
@@ -77,6 +79,20 @@ const App = () => (
               {/* Public spaces routes - no authentication required */}
               <Route path="/spaces" element={<PublicSpaces />} />
               <Route path="/spaces/:id" element={<PublicSpaceDetail />} />
+              
+              {/* Client reservations - authentication required */}
+              <Route path="/my-reservations" element={
+                <ProtectedRoute>
+                  <ClientReservations />
+                </ProtectedRoute>
+              } />
+              
+              {/* Payment success page */}
+              <Route path="/reservations/:reservationId/payment-success" element={
+                <ProtectedRoute>
+                  <PaymentSuccess />
+                </ProtectedRoute>
+              } />
               
               <Route path="/publish-space" element={
                 <ProtectedRoute>
