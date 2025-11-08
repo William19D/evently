@@ -46,7 +46,7 @@ const ClientReservations = () => {
   const navigate = useNavigate();
   const [reservations, setReservations] = useState<ClientReservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'pending' | 'pending_payment' | 'confirmed' | 'completed'>('all');
   const [selectedReservation, setSelectedReservation] = useState<ClientReservation | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
@@ -192,6 +192,27 @@ const ClientReservations = () => {
                   ))}
                 </ul>
               </div>
+            </>
+          )}
+
+          {/* Alerta especial para pending_payment */}
+          {reservation.status === 'pending_payment' && (
+            <>
+              <Separator />
+              <Alert className="bg-orange-50 border-orange-200">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertTitle className="text-orange-900">¡Reserva Aprobada! - Pago Pendiente</AlertTitle>
+                <AlertDescription className="text-orange-800">
+                  <p className="mb-2">
+                    ¡Buenas noticias! El propietario ha aprobado tu reserva por un valor de{' '}
+                    <strong className="text-orange-900">{reservation.cost.formattedTotal}</strong>.
+                  </p>
+                  <p className="text-sm">
+                    Para confirmar definitivamente tu reserva, debes completar el pago. 
+                    Revisa tu email para el link de pago seguro.
+                  </p>
+                </AlertDescription>
+              </Alert>
             </>
           )}
 
@@ -471,7 +492,7 @@ const ClientReservations = () => {
           </div>
 
           {/* Estadísticas */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
             <Card>
               <CardHeader className="pb-3">
                 <CardDescription>Total de Reservas</CardDescription>
@@ -485,6 +506,15 @@ const ClientReservations = () => {
                   Pendientes
                 </CardDescription>
                 <CardTitle className="text-3xl text-yellow-600">{stats.pending}</CardTitle>
+              </CardHeader>
+            </Card>
+            <Card>
+              <CardHeader className="pb-3">
+                <CardDescription className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4 text-orange-600" />
+                  Pend. Pago
+                </CardDescription>
+                <CardTitle className="text-3xl text-orange-600">{stats.pending_payment}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
@@ -509,12 +539,15 @@ const ClientReservations = () => {
 
           {/* Tabs y contenido */}
           <Tabs value={activeTab} onValueChange={(value: any) => setActiveTab(value)} className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+            <TabsList className="grid w-full grid-cols-5 max-w-4xl">
               <TabsTrigger value="all">
                 Todas ({stats.total})
               </TabsTrigger>
               <TabsTrigger value="pending">
                 Pendientes ({stats.pending})
+              </TabsTrigger>
+              <TabsTrigger value="pending_payment">
+                Pend. Pago ({stats.pending_payment})
               </TabsTrigger>
               <TabsTrigger value="confirmed">
                 Confirmadas ({stats.confirmed})

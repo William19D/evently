@@ -87,12 +87,8 @@ const App = () => (
                 </ProtectedRoute>
               } />
               
-              {/* Payment success page */}
-              <Route path="/reservations/:reservationId/payment-success" element={
-                <ProtectedRoute>
-                  <PaymentSuccess />
-                </ProtectedRoute>
-              } />
+              {/* Payment success page - no authentication required */}
+              <Route path="/reservations/:reservationId/payment-success" element={<PaymentSuccess />} />
               
               <Route path="/publish-space" element={
                 <ProtectedRoute>

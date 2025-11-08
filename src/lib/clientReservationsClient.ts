@@ -12,7 +12,7 @@ export interface ClientReservation {
   startDate: string;
   endDate: string;
   estimatedCapacity: number;
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  status: 'pending' | 'pending_payment' | 'confirmed' | 'cancelled' | 'completed';
   duration: {
     hours: number;
     formatted: string;
@@ -72,6 +72,7 @@ export interface ReservationStats {
   total: number;
   byStatus: {
     pending: number;
+    pending_payment: number;
     confirmed: number;
     cancelled: number;
     completed: number;
@@ -200,7 +201,7 @@ export async function getClientReservationsWithStats(): Promise<{
       reservations: responseData.data.reservations || [],
       stats: responseData.data.statistics || {
         total: 0,
-        byStatus: { pending: 0, confirmed: 0, cancelled: 0, completed: 0 },
+        byStatus: { pending: 0, pending_payment: 0, confirmed: 0, cancelled: 0, completed: 0 },
         upcoming: 0,
         past: 0,
         active: 0
@@ -218,7 +219,7 @@ export async function getClientReservationsWithStats(): Promise<{
 // Filtrar reservas por estado
 export function filterReservationsByStatus(
   reservations: ClientReservation[], 
-  status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'all' = 'all'
+  status: 'pending' | 'pending_payment' | 'confirmed' | 'cancelled' | 'completed' | 'all' = 'all'
 ): ClientReservation[] {
   if (status === 'all') {
     return reservations;
@@ -231,6 +232,7 @@ export function getReservationStats(reservations: ClientReservation[]) {
   const stats = {
     total: reservations.length,
     pending: reservations.filter(r => r.status === 'pending').length,
+    pending_payment: reservations.filter(r => r.status === 'pending_payment').length,
     confirmed: reservations.filter(r => r.status === 'confirmed').length,
     cancelled: reservations.filter(r => r.status === 'cancelled').length,
     completed: reservations.filter(r => r.status === 'completed').length,
@@ -287,6 +289,8 @@ export function getStatusColor(status: string): string {
       return 'bg-green-100 text-green-800 border-green-200';
     case 'pending':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    case 'pending_payment':
+      return 'bg-orange-100 text-orange-800 border-orange-200';
     case 'cancelled':
       return 'bg-gray-100 text-gray-800 border-gray-200';
     case 'completed':
@@ -303,6 +307,8 @@ export function getStatusText(status: string): string {
       return 'Confirmada';
     case 'pending':
       return 'Pendiente';
+    case 'pending_payment':
+      return 'Aprobada - Pendiente de Pago';
     case 'cancelled':
       return 'Cancelada';
     case 'completed':
